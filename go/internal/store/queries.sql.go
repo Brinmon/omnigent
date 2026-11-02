@@ -11,6 +11,93 @@ import (
 	"github.com/Brinmon/omnigent/go/internal/db"
 )
 
+const allocateNextPosition = `-- name: AllocateNextPosition :one
+UPDATE conversations
+SET next_position = COALESCE(next_position, 0) + 1
+WHERE workspace_id = ? AND id = ?
+RETURNING COALESCE(next_position, 1) - 1 AS position
+`
+
+type AllocateNextPositionParams struct {
+	WorkspaceID int64
+	ID          db.Uuid16
+}
+
+// Reads and atomically advances the conversation's position counter.
+//
+// The Python store keeps a counter rather than running MAX(position) per append,
+// so allocation stays O(1) and collision-free under the conversation lock. A
+// conversation created before the counter existed has NULL here; the caller
+// falls back to a one-time MAX scan.
+func (q *Queries) AllocateNextPosition(ctx context.Context, arg AllocateNextPositionParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, allocateNextPosition, arg.WorkspaceID, arg.ID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const allocateNextPositionRange = `-- name: AllocateNextPositionRange :one
+UPDATE conversations
+SET next_position = COALESCE(next_position, 0) + ?
+WHERE workspace_id = ? AND id = ?
+RETURNING next_position AS position
+`
+
+type AllocateNextPositionRangeParams struct {
+	NextPosition *int64
+	WorkspaceID  int64
+	ID           db.Uuid16
+}
+
+// Allocates n consecutive positions in one statement, for a batch append.
+//
+// The start is computed in Go from the post-update counter: repeating a numbered
+// parameter in RETURNING makes sqlc emit too few arguments for SQLite's binding.
+func (q *Queries) AllocateNextPositionRange(ctx context.Context, arg AllocateNextPositionRangeParams) (*int64, error) {
+	row := q.db.QueryRowContext(ctx, allocateNextPositionRange, arg.NextPosition, arg.WorkspaceID, arg.ID)
+	var next_position *int64
+	err := row.Scan(&next_position)
+	return next_position, err
+}
+
+const appendConversationItem = `-- name: AppendConversationItem :exec
+INSERT INTO conversation_items (
+    workspace_id, conversation_id, id, response_id, created_at, position,
+    data, search_text, created_by, type, status
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type AppendConversationItemParams struct {
+	WorkspaceID    int64
+	ConversationID db.Uuid16
+	ID             db.Uuid16
+	ResponseID     string
+	CreatedAt      int64
+	Position       int64
+	Data           string
+	SearchText     string
+	CreatedBy      *string
+	Type           int64
+	Status         int64
+}
+
+func (q *Queries) AppendConversationItem(ctx context.Context, arg AppendConversationItemParams) error {
+	_, err := q.db.ExecContext(ctx, appendConversationItem,
+		arg.WorkspaceID,
+		arg.ConversationID,
+		arg.ID,
+		arg.ResponseID,
+		arg.CreatedAt,
+		arg.Position,
+		arg.Data,
+		arg.SearchText,
+		arg.CreatedBy,
+		arg.Type,
+		arg.Status,
+	)
+	return err
+}
+
 const countItems = `-- name: CountItems :one
 SELECT count(*) FROM conversation_items WHERE workspace_id = ? AND conversation_id = ?
 `
@@ -547,6 +634,24 @@ func (q *Queries) ListSessions(ctx context.Context, arg ListSessionsParams) ([]C
 		return nil, err
 	}
 	return items, nil
+}
+
+const maxItemPosition = `-- name: MaxItemPosition :one
+SELECT COALESCE(MAX(position), -1) FROM conversation_items
+WHERE workspace_id = ? AND conversation_id = ?
+`
+
+type MaxItemPositionParams struct {
+	WorkspaceID    int64
+	ConversationID db.Uuid16
+}
+
+// The fallback for a conversation whose counter is NULL.
+func (q *Queries) MaxItemPosition(ctx context.Context, arg MaxItemPositionParams) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, maxItemPosition, arg.WorkspaceID, arg.ConversationID)
+	var coalesce interface{}
+	err := row.Scan(&coalesce)
+	return coalesce, err
 }
 
 const setSessionArchived = `-- name: SetSessionArchived :exec

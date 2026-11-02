@@ -150,3 +150,36 @@ LIMIT sqlc.arg('page_limit');
 SELECT count(*) AS comment_count, max(updated_at) AS last_updated_at
 FROM comments
 WHERE workspace_id = ? AND conversation_id = ?;
+
+-- name: AllocateNextPosition :one
+-- Reads and atomically advances the conversation's position counter.
+--
+-- The Python store keeps a counter rather than running MAX(position) per append,
+-- so allocation stays O(1) and collision-free under the conversation lock. A
+-- conversation created before the counter existed has NULL here; the caller
+-- falls back to a one-time MAX scan.
+UPDATE conversations
+SET next_position = COALESCE(next_position, 0) + 1
+WHERE workspace_id = ? AND id = ?
+RETURNING COALESCE(next_position, 1) - 1 AS position;
+
+-- name: AllocateNextPositionRange :one
+-- Allocates n consecutive positions in one statement, for a batch append.
+--
+-- The start is computed in Go from the post-update counter: repeating a numbered
+-- parameter in RETURNING makes sqlc emit too few arguments for SQLite's binding.
+UPDATE conversations
+SET next_position = COALESCE(next_position, 0) + ?
+WHERE workspace_id = ? AND id = ?
+RETURNING next_position AS position;
+
+-- name: AppendConversationItem :exec
+INSERT INTO conversation_items (
+    workspace_id, conversation_id, id, response_id, created_at, position,
+    data, search_text, created_by, type, status
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- name: MaxItemPosition :one
+-- The fallback for a conversation whose counter is NULL.
+SELECT COALESCE(MAX(position), -1) FROM conversation_items
+WHERE workspace_id = ? AND conversation_id = ?;

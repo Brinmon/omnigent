@@ -286,6 +286,19 @@ def main(argv: list[str] | None = None) -> int:
             )
         conn.commit()
 
+        # Keep the position counter consistent with the rows just written.
+        # A counter behind MAX(position) makes the next append reuse an existing
+        # position, which silently breaks ordering and any keyset pagination.
+        for name in ("main", "child", "fork", "archived"):
+            conn.execute(
+                "UPDATE conversations SET next_position = ("
+                "  SELECT COALESCE(MAX(position) + 1, 0) FROM conversation_items"
+                "  WHERE conversation_id = conversations.id"
+                ") WHERE id = ?",
+                (bytes.fromhex(SEED[name]),),
+            )
+        conn.commit()
+
         # ── Access rows the server needs before it will list anything ──────
         # GET /v1/sessions filters by session_permissions, so a fixture without
         # these rows is invisible to the Python server even though the

@@ -66,6 +66,9 @@ run-omnigents.sh
 *.db
 *.db-wal
 *.db-shm
+# Except the checked-in compatibility fixture: it is the oracle the Go rewrite
+# tests read a Python-written database from, so it must ship with the repo.
+!go/testdata/reference.db
 # Persisted artifacts from ad-hoc runs.
 artifacts/
 .tmp-codex-parity-target/

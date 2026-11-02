@@ -19,6 +19,7 @@ import (
 
 	"github.com/Brinmon/omnigent/go/internal/api"
 	"github.com/Brinmon/omnigent/go/internal/db"
+	"github.com/Brinmon/omnigent/go/internal/pi"
 	"github.com/Brinmon/omnigent/go/internal/store"
 	"github.com/Brinmon/omnigent/go/internal/stream"
 )
@@ -28,6 +29,10 @@ import (
 // The interface is generated from openapi.json, so this type cannot drift from
 // the contract: a missing or renamed operation stops the build.
 type Server struct {
+	// db is retained alongside queries because a turn writes a small batch of
+	// rows and wants one transaction around it, which the generated query object
+	// does not expose.
+	db        *sql.DB
 	queries   *store.Queries
 	version   string
 	workspace int64
@@ -49,6 +54,10 @@ type Server struct {
 	// queued behind an unbounded number of children.
 	turnsMu     sync.Mutex
 	activeTurns map[string]context.CancelFunc
+	// piSessions holds the live child per session so an interrupt can ask Pi to
+	// abort its turn rather than killing the process, which would skip the
+	// terminal frame the client waits for.
+	piSessions map[string]*pi.Session
 }
 
 // compile-time proof that this type satisfies the generated interface. The
@@ -58,6 +67,7 @@ var _ api.ServerInterface = (*Server)(nil)
 // New builds a Server over the given database.
 func New(conn *sql.DB, version string) *Server {
 	return &Server{
+		db:          conn,
 		queries:     store.New(conn),
 		version:     version,
 		userID:      "local",

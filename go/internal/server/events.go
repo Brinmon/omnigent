@@ -108,7 +108,7 @@ func (s *Server) PostEventV1SessionsSessionIdEventsPost(w http.ResponseWriter, r
 
 	acks := make([]map[string]any, 0, len(body))
 	for _, input := range body {
-		ack, err := s.applyEvent(r.Context(), id.String(), input)
+		ack, err := s.applyEvent(r.Context(), id.String(), id, input)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, "invalid_input", err.Error())
 			return
@@ -157,12 +157,12 @@ func firstNonSpace(raw []byte) byte {
 }
 
 // applyEvent persists one input and, for a message, runs an echo turn.
-func (s *Server) applyEvent(ctx context.Context, sessionID string, input sessionEventInput) (map[string]any, error) {
+func (s *Server) applyEvent(ctx context.Context, sessionID string, id db.Uuid16, input sessionEventInput) (map[string]any, error) {
 	hub := s.streams.ForSession(sessionID)
 
 	switch input.Type {
 	case "message":
-		if err := s.runTurn(ctx, sessionID, input); err != nil {
+		if err := s.runTurn(ctx, sessionID, id, input); err != nil {
 			return nil, err
 		}
 		return map[string]any{"ok": true, "type": input.Type}, nil
@@ -191,6 +191,7 @@ func (s *Server) applyEvent(ctx context.Context, sessionID string, input session
 func (s *Server) runTurn(
 	ctx context.Context,
 	sessionID string,
+	sessionIDRaw db.Uuid16,
 	input sessionEventInput,
 ) error {
 	excerpt := userMessageText(input.Data)
@@ -221,7 +222,7 @@ func (s *Server) runTurn(
 			s.turnsMu.Unlock()
 			cancel()
 		}()
-		if err := s.runPiTurn(turnCtx, sessionID, hub, excerpt); err != nil {
+		if err := s.runPiTurn(turnCtx, sessionID, sessionIDRaw, hub, excerpt); err != nil {
 			s.publishPiFailure(turnCtx, sessionID, hub, "harness", err.Error())
 		}
 	}()
@@ -238,6 +239,14 @@ func (s *Server) interruptTurn(ctx context.Context, sessionID string, hub *strea
 	cancel, running := s.activeTurns[sessionID]
 	s.turnsMu.Unlock()
 	if running {
+		// Ask Pi to abort its turn rather than killing the process: the child
+		// answers with agent_settled{aborted:true}, which is what lets the turn
+		// publish response.cancelled and idle. Killing it would leave the client
+		// on "running" forever.
+		if s.abortPiSession(ctx, sessionID) {
+			return
+		}
+		// No child yet (still launching): the cancel is the only handle.
 		cancel()
 		return
 	}

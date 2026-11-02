@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Brinmon/omnigent/go/internal/db"
 	"github.com/Brinmon/omnigent/go/internal/pi"
 	"github.com/Brinmon/omnigent/go/internal/stream"
 )
@@ -130,6 +131,7 @@ type piTurn struct {
 func (s *Server) runPiTurn(
 	ctx context.Context,
 	sessionID string,
+	sessionIDRaw db.Uuid16,
 	hub *stream.Hub,
 	prompt string,
 ) error {
@@ -183,6 +185,9 @@ func (s *Server) runPiTurn(
 	}
 	slog.Debug("pi launched", "session", sessionID, "pid", session.Pid())
 
+	s.registerPiSession(sessionID, session)
+	defer s.unregisterPiSession(sessionID)
+
 	s.publishStatus(ctx, sessionID, hub, "running")
 
 	// Run the turn to completion here: the caller's goroutine owns the registry
@@ -190,7 +195,9 @@ func (s *Server) runPiTurn(
 	defer cancel()
 	defer session.Close()
 	defer os.RemoveAll(workdir)
-	s.consumePiEvents(turnCtx, sessionID, hub, session, prompt)
+	recorder := newTurnRecorder()
+	recorder.addUserMessage(prompt)
+	s.consumePiEvents(turnCtx, sessionID, sessionIDRaw, hub, session, prompt, recorder)
 	return nil
 }
 
@@ -198,9 +205,11 @@ func (s *Server) runPiTurn(
 func (s *Server) consumePiEvents(
 	ctx context.Context,
 	sessionID string,
+	sessionIDRaw db.Uuid16,
 	hub *stream.Hub,
 	session *pi.Session,
 	prompt string,
+	recorder *turnRecorder,
 ) {
 	slog.Debug("pi prompt sending", "bytes", len(prompt))
 	if err := session.Prompt(ctx, prompt); err != nil {
@@ -277,6 +286,12 @@ func (s *Server) consumePiEvents(
 
 			case "agent_settled":
 				aborted, _ := event.Raw["aborted"].(bool)
+				// Persist before announcing the end: a client that receives
+				// idle and reloads immediately must find the rows already there.
+				recorder.addAssistantMessage(reply.String(), s.pi.model)
+				if err := recorder.flush(ctx, s.db, s.workspace, sessionIDRaw); err != nil {
+					slog.Warn("could not persist the turn", "session", sessionID, "error", err)
+				}
 				s.publishTurnEnd(ctx, sessionID, hub, reply.String(), aborted)
 				return
 			}
@@ -477,4 +492,41 @@ func sortStrings(values []string) {
 			values[j], values[j-1] = values[j-1], values[j]
 		}
 	}
+}
+
+// registerPiSession records the live child so interrupt can ask it to abort.
+//
+// Killing the process instead would skip agent_settled, so the turn would never
+// publish its terminal frame and the client would stay on "running".
+func (s *Server) registerPiSession(sessionID string, session *pi.Session) {
+	s.turnsMu.Lock()
+	defer s.turnsMu.Unlock()
+	if s.piSessions == nil {
+		s.piSessions = make(map[string]*pi.Session)
+	}
+	s.piSessions[sessionID] = session
+}
+
+// unregisterPiSession drops the record once the turn ends.
+func (s *Server) unregisterPiSession(sessionID string) {
+	s.turnsMu.Lock()
+	defer s.turnsMu.Unlock()
+	delete(s.piSessions, sessionID)
+}
+
+// abortPiSession asks the running child to stop its turn.
+//
+// Returns false when no child is registered, which means the turn has not
+// reached the launch point yet or has already finished.
+func (s *Server) abortPiSession(ctx context.Context, sessionID string) bool {
+	s.turnsMu.Lock()
+	session := s.piSessions[sessionID]
+	s.turnsMu.Unlock()
+	if session == nil {
+		return false
+	}
+	// Best effort: a failing abort write still lets the turn end on its own,
+	// and the cancel path remains as the outer bound.
+	_ = session.Abort(ctx)
+	return true
 }
