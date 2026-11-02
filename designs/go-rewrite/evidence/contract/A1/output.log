@@ -1,0 +1,4 @@
+=== RUN   TestIdenticalDocumentsMatch
+--- PASS: TestIdenticalDocumentsMatch (0.01s)
+PASS
+ok  	github.com/Brinmon/omnigent/go/cmd/openapi-diff	0.272s

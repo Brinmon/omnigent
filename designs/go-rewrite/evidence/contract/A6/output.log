@@ -1,0 +1,10 @@
+=== RUN   TestCompressedTextFrames
+--- PASS: TestCompressedTextFrames (0.00s)
+=== RUN   TestCompressedTextLegacyPassThrough
+--- PASS: TestCompressedTextLegacyPassThrough (0.00s)
+=== RUN   TestEnumCodesMatchDump
+--- PASS: TestEnumCodesMatchDump (0.00s)
+=== RUN   TestStoredEnumCodesDecode
+--- PASS: TestStoredEnumCodesDecode (0.00s)
+PASS
+ok  	github.com/Brinmon/omnigent/go/internal/db	0.237s

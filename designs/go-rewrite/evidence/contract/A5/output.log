@@ -1,0 +1,6 @@
+=== RUN   TestReferenceDBIsReadable
+--- PASS: TestReferenceDBIsReadable (0.00s)
+=== RUN   TestUuid16RoundTrip
+--- PASS: TestUuid16RoundTrip (0.00s)
+PASS
+ok  	github.com/Brinmon/omnigent/go/internal/db	0.270s

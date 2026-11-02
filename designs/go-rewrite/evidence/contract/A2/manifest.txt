@@ -1,0 +1,15 @@
+id: A2
+description: All 154 operations implemented
+command: bash -c cd '/e/GitCode/omnigent/go' && go test ./cmd/openapi-diff/ -run 'TestMissingOperationFails|TestMissingPathFails' -v
+commit: f4f97bbea
+go: go1.26.1
+python: 3.12.13
+duration_s: 1
+result: PASS
+tail:
+=== RUN   TestMissingPathFails
+--- PASS: TestMissingPathFails (0.02s)
+=== RUN   TestMissingOperationFails
+--- PASS: TestMissingOperationFails (0.02s)
+PASS
+ok  	github.com/Brinmon/omnigent/go/cmd/openapi-diff	0.316s

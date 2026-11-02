@@ -1,0 +1,21 @@
+id: A4
+description: ServerStreamEvent 56 variants match spec
+command: bash -c cd '/e/GitCode/omnigent/go' && go test ./internal/event/ -v
+commit: f4f97bbea
+go: go1.26.1
+python: 3.12.13
+duration_s: 1
+result: PASS
+tail:
+=== RUN   TestStreamEventTypesMatchSpec
+--- PASS: TestStreamEventTypesMatchSpec (0.00s)
+=== RUN   TestStreamEventCountIs56
+--- PASS: TestStreamEventCountIs56 (0.00s)
+=== RUN   TestUnionIsInternallyConsistent
+--- PASS: TestUnionIsInternallyConsistent (0.00s)
+=== RUN   TestEveryEventMapsToASchema
+--- PASS: TestEveryEventMapsToASchema (0.00s)
+=== RUN   TestStreamEventTypesAreSortedDocuments
+--- PASS: TestStreamEventTypesAreSortedDocuments (0.00s)
+PASS
+ok  	github.com/Brinmon/omnigent/go/internal/event	(cached)

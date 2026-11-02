@@ -1,0 +1,19 @@
+id: A6
+description: Uuid16 / enum codes / CompressedText compatibility
+command: bash -c cd '/e/GitCode/omnigent/go' && go test ./internal/db/ -run 'TestCompressedText|TestEnumCodes|TestStoredEnumCodes' -v
+commit: f4f97bbea
+go: go1.26.1
+python: 3.12.13
+duration_s: 2
+result: PASS
+tail:
+=== RUN   TestCompressedTextFrames
+--- PASS: TestCompressedTextFrames (0.00s)
+=== RUN   TestCompressedTextLegacyPassThrough
+--- PASS: TestCompressedTextLegacyPassThrough (0.00s)
+=== RUN   TestEnumCodesMatchDump
+--- PASS: TestEnumCodesMatchDump (0.00s)
+=== RUN   TestStoredEnumCodesDecode
+--- PASS: TestStoredEnumCodesDecode (0.00s)
+PASS
+ok  	github.com/Brinmon/omnigent/go/internal/db	0.237s

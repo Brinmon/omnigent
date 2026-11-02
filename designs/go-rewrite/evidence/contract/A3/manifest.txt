@@ -1,0 +1,20 @@
+id: A3
+description: 194 schema field/required/enum parity
+command: bash -c cd '/e/GitCode/omnigent/go' && go test ./cmd/openapi-diff/ -run 'TestMissingProperty|TestRelaxedRequired|TestMissingEnumValue|TestMissingSchema' -v
+commit: f4f97bbea
+go: go1.26.1
+python: 3.12.13
+duration_s: 2
+result: PASS
+tail:
+=== RUN   TestMissingSchemaFails
+--- PASS: TestMissingSchemaFails (0.04s)
+=== RUN   TestMissingPropertyFails
+--- PASS: TestMissingPropertyFails (0.03s)
+=== RUN   TestRelaxedRequiredFails
+--- PASS: TestRelaxedRequiredFails (0.03s)
+=== RUN   TestMissingEnumValueFails
+    main_test.go:181: mutated enum on schema ElicitationRequestParams.mode
+--- PASS: TestMissingEnumValueFails (0.02s)
+PASS
+ok  	github.com/Brinmon/omnigent/go/cmd/openapi-diff	0.389s

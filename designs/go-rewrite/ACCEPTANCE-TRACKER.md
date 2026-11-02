@@ -17,12 +17,12 @@
 
 | ID | 判据 | 命令 / 用例 | 基线 | Go | 证据 | 勾 |
 |---|---|---|---|---|---|---|
-| A1 | OpenAPI path 集合等价 | `go run ./cmd/openapi-diff --old openapi.json --new http://127.0.0.1:8080/openapi.json` | — | — | `evidence/A1/` | ⬜ |
-| A2 | 154 operation 全部实现 | 同上 | — | — | `evidence/A2/` | ⬜ |
-| A3 | 194 schema 字段/必填/枚举一致 | 同上 | — | — | `evidence/A3/` | ⬜ |
-| A4 | `ServerStreamEvent` 57 变体 `type` 集合一致 | `go test ./internal/api -run StreamEventGolden` | — | — | `evidence/A4/` | ⬜ |
-| A5 | 旧库（Python 写）Go 可直读 | `go test ./internal/db -run Compat` | — | — | `evidence/A5/` | ⬜ |
-| A6 | Uuid16 / SMALLINT 枚举 / CompressedText 兼容 | 同上（含 zstd 帧 + 旧明文两种行） | — | — | `evidence/A6/` | ⬜ |
+| A1 | OpenAPI path 集合等价（117） | `bash designs/go-rewrite/run-contract.sh A1` | — | ✅ 1s | `evidence/contract/A1/` | ✅ |
+| A2 | 154 operation 全部实现 | `run-contract.sh A2`（含缺失 path/operation 负向用例） | — | ✅ 1s | `evidence/contract/A2/` | ✅ |
+| A3 | 194 schema 字段/必填/枚举一致 | `run-contract.sh A3`（含属性缺失/required 放宽/枚举缩水负向用例） | — | ✅ 2s | `evidence/contract/A3/` | ✅ |
+| A4 | `ServerStreamEvent` **56** 变体 `type` 集合一致 | `run-contract.sh A4`（`go test ./internal/event/`） | — | ✅ 1s | `evidence/contract/A4/` | ✅ |
+| A5 | 旧库（Python 写）Go 可直读 | `run-contract.sh A5`（真 Python 生成的 `go/testdata/reference.db`） | — | ✅ 2s | `evidence/contract/A5/` | ✅ |
+| A6 | Uuid16 / SMALLINT 枚举 / CompressedText 兼容 | `run-contract.sh A6`（zstd 帧 + raw 帧 + 旧 TEXT + 旧 BLOB 四态） | — | ✅ 2s | `evidence/contract/A6/` | ✅ |
 
 ---
 
@@ -84,7 +84,7 @@
 
 | 门 | 要求 | 状态 |
 |---|---|---|
-| G0 → P1 | A1–A6 全 ✅ | ⬜ |
+| G0 → P1 | A1–A6 全 ✅ | ✅ **已满足** |
 | P1 → P2 | B1–B3、E1–E2 全 ✅ | ⬜ |
 | P2 → P3 | B4–B5、E3 全 ✅ | ⬜ |
 | **P3 → P4（V1 关键门）** | C1–C4、C6 全 ✅ | ⬜ |

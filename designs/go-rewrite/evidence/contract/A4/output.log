@@ -1,0 +1,12 @@
+=== RUN   TestStreamEventTypesMatchSpec
+--- PASS: TestStreamEventTypesMatchSpec (0.00s)
+=== RUN   TestStreamEventCountIs56
+--- PASS: TestStreamEventCountIs56 (0.00s)
+=== RUN   TestUnionIsInternallyConsistent
+--- PASS: TestUnionIsInternallyConsistent (0.00s)
+=== RUN   TestEveryEventMapsToASchema
+--- PASS: TestEveryEventMapsToASchema (0.00s)
+=== RUN   TestStreamEventTypesAreSortedDocuments
+--- PASS: TestStreamEventTypesAreSortedDocuments (0.00s)
+PASS
+ok  	github.com/Brinmon/omnigent/go/internal/event	(cached)

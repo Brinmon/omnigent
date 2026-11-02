@@ -1,0 +1,84 @@
+{
+  "account_token_kind": {
+    "invite": 1,
+    "magic": 2
+  },
+  "agent_kind": {
+    "server": 1,
+    "user": 2
+  },
+  "comment_status": {
+    "addressed": 2,
+    "draft": 1
+  },
+  "conversation_kind": {
+    "default": 1,
+    "sub_agent": 2
+  },
+  "device_grant_status": {
+    "approved": 2,
+    "denied": 3,
+    "pending": 1,
+    "redeemed": 4,
+    "revoked": 5
+  },
+  "host_status": {
+    "offline": 2,
+    "online": 1
+  },
+  "item_status": {
+    "completed": 1,
+    "failed": 4,
+    "in_progress": 2,
+    "incomplete": 3
+  },
+  "item_type": {
+    "compaction": 6,
+    "error": 5,
+    "function_call": 2,
+    "function_call_output": 3,
+    "message": 1,
+    "native_tool": 7,
+    "reasoning": 4,
+    "resource_event": 8,
+    "routing_decision": 9,
+    "slash_command": 10,
+    "terminal_command": 11
+  },
+  "policy_scope": {
+    "default": 1,
+    "session": 2
+  },
+  "policy_type": {
+    "python": 1,
+    "url": 2
+  },
+  "scheduled_task_execution_target": {
+    "connected_host": 1,
+    "managed_sandbox": 2
+  },
+  "scheduled_task_run_status": {
+    "failed": 4,
+    "running": 2,
+    "scheduled": 1,
+    "skipped": 5,
+    "starting": 6,
+    "succeeded": 3
+  },
+  "scheduled_task_session_mode": {
+    "continue": 2,
+    "new": 1
+  },
+  "scheduled_task_state": {
+    "active": 1,
+    "completed": 4,
+    "deleted": 3,
+    "paused": 2
+  },
+  "session_live_status": {
+    "failed": 4,
+    "idle": 1,
+    "running": 2,
+    "waiting": 3
+  }
+}

@@ -108,3 +108,8 @@ designs/go-rewrite/evidence/baseline/*/playwright/
 designs/go-rewrite/evidence/baseline/*/*.log
 designs/go-rewrite/evidence/baseline/*.tsv
 designs/go-rewrite/evidence/baseline/pi-agent-dir/
+
+# Go module: build artifacts, and the transient SQLite side files that appear
+# when a test opens the checked-in reference database.
+go/testdata/*.db-shm
+go/testdata/*.db-wal

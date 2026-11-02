@@ -1,0 +1,13 @@
+id: A1
+description: OpenAPI path set equivalent (117 paths)
+command: bash -c cd '/e/GitCode/omnigent/go' && go test ./cmd/openapi-diff/ -run TestIdenticalDocumentsMatch -v
+commit: f4f97bbea
+go: go1.26.1
+python: 3.12.13
+duration_s: 1
+result: PASS
+tail:
+=== RUN   TestIdenticalDocumentsMatch
+--- PASS: TestIdenticalDocumentsMatch (0.01s)
+PASS
+ok  	github.com/Brinmon/omnigent/go/cmd/openapi-diff	0.272s

@@ -94,7 +94,7 @@
 ### 2.2 会话读模型与事件（前端直接依赖）
 
 - 持久化条目 11 种（`db/enum_codecs.py:ITEM_TYPE`）：`message`、`function_call`、`function_call_output`、`reasoning`、`error`、`compaction`、`native_tool`、`resource_event`、`routing_decision`、`slash_command`、`terminal_command`。
-- 线上事件 union `ServerStreamEvent` **57 个变体**（`server/schemas.py:5118`，discriminated by `type`），另有 `HarnessStreamEvent` 追加 6 个（`injection_consumed`、`policy_evaluation_request`、`subagent_*`）。每个事件带 `sequence_number`（由 SSE 序列化器赋值）。
+- 线上事件 union `ServerStreamEvent` **56 个变体**（`openapi.json` 实测：oneOf 56 项，与 discriminator.mapping 56 键一致；定义在 `server/schemas.py:5118`，discriminated by `type`）。每个事件带 `sequence_number`（由 SSE 序列化器赋值）。注：`HarnessStreamEvent` 是 runner 与 harness 之间的内部事件，不出现在 `openapi.json` 中。
 - 断线语义（`routes/sessions/__init__.py` 文档）：**snapshot + live tail，不是 replay**。客户端开流 → GET 快照 → 按 item id 去重。
 - 每个会话两条长连接：`GET /v1/sessions/{id}/stream`（SSE，事件+presence）和 `WS /v1/sessions/updates`（侧边栏 watch-set 增量：`watch` → `snapshot`/`changed`/`removed`/`heartbeat`）。
 
@@ -200,7 +200,7 @@ web/src/
 Go 版后端只要能满足下面 6 条，前端一行不用改：
 
 1. `openapi.json`（3.2.0，154 operation）——建议直接当唯一真源做 spec-first 代码生成。
-2. `ServerStreamEvent` 57 个变体的 `type` 字面量 + 字段名（snake_case）+ `sequence_number`。
+2. `ServerStreamEvent` 56 个变体的 `type` 字面量 + 字段名（snake_case）+ `sequence_number`。
 3. SSE 语义：不 replay，`[DONE]` 收尾，15s 心跳，presence 随流注册。
 4. `WS /v1/sessions/updates` 的 `watch`/`snapshot`/`changed`/`removed`/`heartbeat` 五种帧。
 5. `POST /v1/sessions/{id}/events` 的 `type` 判别（含 `pending_id` / `denied` / `queued` / `recovered` 返回字段）。
