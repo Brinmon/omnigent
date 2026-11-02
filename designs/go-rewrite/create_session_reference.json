@@ -1,0 +1,232 @@
+{
+  "created_agent_id": "425a78ef7f0b1225b13ac4eea5a8ed87",
+  "created_row": {
+    "agent": [
+      "b'BZx\\xef\\x7f\\x0b\\x12%\\xb1:\\xc4\\xee\\xa5\\xa8\\xed\\x87'",
+      "1793629817",
+      "probe_agent",
+      "425a78ef7f0b1225b13ac4eea5a8ed87/17a123571b02541f920e805bab54640b17347cf59c2071a3422a1237477044c4",
+      "1",
+      "2",
+      "local"
+    ],
+    "conversation": [
+      "b'\\xc4\\xa5\\xdd|\\xf7\\x15J\\x0b\\x90\\xb4\\x00\\xe5\\x1eT\\xd6\\xac'",
+      "1793629817",
+      "1793629817",
+      "Probe from bundle",
+      "None",
+      "b'\\xc4\\xa5\\xdd|\\xf7\\x15J\\x0b\\x90\\xb4\\x00\\xe5\\x1eT\\xd6\\xac'",
+      "0",
+      "0",
+      "0",
+      "b'BZx\\xef\\x7f\\x0b\\x12%\\xb1:\\xc4\\xee\\xa5\\xa8\\xed\\x87'",
+      "None"
+    ],
+    "metadata": [
+      "1",
+      "None",
+      "None"
+    ],
+    "permissions": [
+      [
+        "local",
+        "4"
+      ]
+    ]
+  },
+  "created_session_keys": [
+    "active_response_id",
+    "agent_id",
+    "agent_name",
+    "archived",
+    "background_task_count",
+    "background_tasks",
+    "context_window",
+    "cost_control_mode_override",
+    "created_at",
+    "external_session_id",
+    "git_branch",
+    "harness",
+    "host_id",
+    "host_online",
+    "host_resumable",
+    "id",
+    "inference_configured",
+    "inference_error",
+    "items",
+    "kind",
+    "labels",
+    "last_task_error",
+    "last_total_tokens",
+    "llm_model",
+    "mcp_startup",
+    "model_options",
+    "model_override",
+    "native_usage_baseline",
+    "parent_session_id",
+    "pending_elicitations",
+    "pending_inputs",
+    "permission_level",
+    "project_id",
+    "reasoning_effort",
+    "root_conversation_id",
+    "runner_id",
+    "runner_online",
+    "sandbox_profile",
+    "sandbox_status",
+    "share_workspace_files",
+    "side_chat_settings_supported",
+    "status",
+    "sub_agent_name",
+    "subagent_routing_override",
+    "terminal_launch_args",
+    "terminal_pending",
+    "title",
+    "todos",
+    "total_cost_usd",
+    "updated_at",
+    "usage_by_model",
+    "usage_included",
+    "workspace"
+  ],
+  "existing_session_keys": [
+    "agent_id",
+    "agent_name",
+    "archived",
+    "comments_count",
+    "comments_updated_at",
+    "created_at",
+    "id",
+    "labels",
+    "owner",
+    "pending_elicitations_count",
+    "permission_level",
+    "status",
+    "title",
+    "updated_at",
+    "viewer_unread"
+  ],
+  "json": {
+    "body": {
+      "active_response_id": null,
+      "agent_id": "425a78ef7f0b1225b13ac4eea5a8ed87",
+      "agent_name": "probe_agent",
+      "archived": false,
+      "background_task_count": null,
+      "background_tasks": null,
+      "context_window": null,
+      "cost_control_mode_override": null,
+      "created_at": 1793629817,
+      "external_session_id": null,
+      "git_branch": null,
+      "harness": "pi",
+      "host_id": null,
+      "host_online": null,
+      "host_resumable": false,
+      "id": "bfc7a666e77f422e9e41a66b87f44d78",
+      "inference_configured": false,
+      "inference_error": null,
+      "items": [],
+      "kind": "default",
+      "labels": {
+        "omnigent.client_surface": "cli"
+      },
+      "last_task_error": null,
+      "last_total_tokens": null,
+      "llm_model": null,
+      "mcp_startup": null,
+      "model_options": [],
+      "model_override": null,
+      "native_usage_baseline": null,
+      "parent_session_id": null,
+      "pending_elicitations": [],
+      "pending_inputs": [],
+      "permission_level": 4,
+      "project_id": null,
+      "reasoning_effort": null,
+      "root_conversation_id": "bfc7a666e77f422e9e41a66b87f44d78",
+      "runner_id": null,
+      "runner_online": true,
+      "sandbox_profile": null,
+      "sandbox_status": null,
+      "share_workspace_files": false,
+      "side_chat_settings_supported": false,
+      "status": "idle",
+      "sub_agent_name": null,
+      "subagent_routing_override": null,
+      "terminal_launch_args": null,
+      "terminal_pending": false,
+      "title": "Probe from json",
+      "todos": [],
+      "total_cost_usd": null,
+      "updated_at": 1793629817,
+      "usage_by_model": null,
+      "usage_included": true,
+      "workspace": null
+    },
+    "status": 201
+  },
+  "json_validation": {
+    "agent_id as uuid": {
+      "body": {
+        "error": {
+          "code": "not_found",
+          "message": "Not found."
+        }
+      },
+      "status": 404
+    },
+    "bad agent_id": {
+      "body": {
+        "error": {
+          "code": "not_found",
+          "message": "Agent not found: '00000000000000000000000000000000'"
+        }
+      },
+      "status": 404
+    },
+    "empty": {
+      "body": {
+        "detail": [
+          {
+            "input": {},
+            "loc": [
+              "agent_id"
+            ],
+            "msg": "Field required",
+            "type": "missing",
+            "url": "https://errors.pydantic.dev/2.14/v/missing"
+          }
+        ]
+      },
+      "status": 422
+    },
+    "title only": {
+      "body": {
+        "detail": [
+          {
+            "input": {
+              "title": "x"
+            },
+            "loc": [
+              "agent_id"
+            ],
+            "msg": "Field required",
+            "type": "missing",
+            "url": "https://errors.pydantic.dev/2.14/v/missing"
+          }
+        ]
+      },
+      "status": 422
+    }
+  },
+  "multipart": {
+    "body": {
+      "agent_id": "425a78ef7f0b1225b13ac4eea5a8ed87",
+      "agent_name": "probe_agent",
+      "session_id": "c4a5dd7cf7154a0b90b400e51e54d6ac"
+    },
+    "status": 201
+  }
+}
