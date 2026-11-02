@@ -219,3 +219,80 @@ unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
 bash designs/go-rewrite/run-baseline.sh C1
 # 期望：PASS，且耗时 ~36s（不是 55s+）
 ```
+
+---
+
+## 9. Windows 缺陷修复补充（第二阶段）
+
+### 9.1 已确认修复：D5 文件搜索 500
+
+**根因**（已抓到完整 traceback）：
+
+```
+File "omnigent/inner/os_env.py", line 657, in _start_unchecked_locked
+    assert self._tmpdir is not None
+AssertionError
+```
+
+`_tmpdir` 只在 `sandbox.active` 时创建。但 Windows 分支需要用它放 helper config
+文件（`subprocess` 在 Windows 上没有 `pass_fds`）。所以 `sandbox: {type: none}`
+（默认！）→ `_tmpdir is None` → 断言炸 → 所有 filesystem / terminal 调用 500。
+
+**修复**：`omnigent/inner/os_env.py` 加 `IS_WINDOWS and not sandbox.active` 分支创建 tmpdir。
+
+**A/B 重放验证**：
+
+| | 500 次数 |
+|---|---|
+| 回滚修复 | **2** |
+| 应用修复 | **0** |
+
+### 9.2 已确认修复：裸 `text/plain` 500
+
+`runner/app.py` 只有 `OmnigentError` / `ValueError` / `ResourceError` 处理器，
+没有 catch-all。未捕获异常 → uvicorn 默认 `text/plain: Internal Server Error`
+→ server 侧 `_runner_resource_write_payload` 解析失败 → 真实原因被替换成
+"invalid response"。
+
+**修复**：加 `@app.exception_handler(Exception)`，返回结构化 JSON + 日志 + traceback
+（`OMNIGENT_DBG_ERRORS=1` 时才带 traceback）。同时 server 侧日志增加 `response_body`。
+
+### 9.3 已确认修复：Windows shell 发现
+
+`_platform.py` 两处 `if IS_WINDOWS: return "bash"` 直接放弃了 shell 探测。
+改为真实探测（Git for Windows / MSYS2 / WSL 提供的 zsh/bash/fish），
+最后回退 `%COMSPEC%`。
+
+### 9.4 D3 终端的真实结论：**架构级不兼容，需 85 处改造**
+
+已实测 psmux 3.3.8：
+
+| psmux 能力 | 结果 |
+|---|---|
+| `new-session` / `has-session` / `list-sessions` | ✅ 正常 |
+| control mode `-C`（`%begin`/`%end` 帧） | ✅ 正常 |
+| **`-S <unix-socket-path>`** | ❌ **exit 0 但 socket 文件根本不创建** |
+
+Omnigent 的终端栈用 `tmux -S <socket_path>`（Unix domain socket），
+在 Windows 上完全没有效果。全仓库 **85 处** `-S` 调用点。
+
+**结论**：Windows 终端支持不是"修个 bug"，是**把 tmux 寻址从 `-S socket` 改成
+`-L name`（named pipe）的架构改造**，涉及 `terminals/` + 11 个 native harness bridge。
+
+**V1 决策**：`pi` harness 不用 tmux 终端（Pi 自带 bash 工具），所以 V1 **不受影响**。
+D3 标的 `blocked(env)` 保持不变，改到 Linux 补证。
+
+### 9.5 真实 API 端到端验证
+
+新增 `designs/go-rewrite/verify-real-pi.py`，用真实 DeepSeek 端点跑真 Pi：
+
+```
+provider: openai | endpoint: http://49.232.251.165:8080/v1 | model: deepseek-v4.1-flash
+exit: 0
+--- stdout ---
+PONG
+OK: got 'PONG'
+```
+
+这证明 **spec 加载 → runner spawn → Pi RPC → provider 凭据 → 流式** 整链在
+Windows 上工作，不依赖 mock。
