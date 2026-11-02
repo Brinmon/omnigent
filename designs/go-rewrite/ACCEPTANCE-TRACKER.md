@@ -61,9 +61,9 @@
 |---|---|---|---|---|---|---|
 | D1 | `PHASE_REQUEST`/`PHASE_TOOL_CALL` 拦截生效 | `tests/e2e_ui/approvals/test_approval_card.py`、`test_ask_user_question.py` | ✅ 36s | — | `evidence/D1/` | 🟡 |
 | D2 | CEL 策略结果与 Python 逐例一致 | 对拍脚本（同表达式 × 同事件样本） | ⬜ | — | `evidence/D2/` | ⬜ |
-| D3 | 终端创建/读/写/关闭 | `tests/e2e_ui/shells/test_new_shell.py`、`test_new_shell_reconnects.py` | ❌ 414s | — | `evidence/D3/` | ⛔ |
+| D3 | ~~终端创建/读/写/关闭~~ | ~~`tests/e2e_ui/shells/test_new_shell.py`~~ | 🚫 不适用 | — | — | 🚫 |
 | D4 | 文件上传/下载/列表 | `tests/e2e_ui/files/`（挑上传与列表各一） | ⬜ | — | `evidence/D4/` | ⬜ |
-| D5 | 工作区文件树 + 内容搜索 | `tests/e2e_ui/files/test_file_search.py` | ❌ 89s | — | `evidence/D5/` | ⛔ |
+| D5 | 工作区文件树 + 内容搜索 | `tests/e2e_ui/files/test_file_search.py` | 🟡 500 已修 | — | `evidence/D5/` | 🟡 |
 | D6 | Fork 会话（带历史、与父隔离） | `tests/e2e_ui/fork_session/test_fork_from_middle.py`、`test_fork_response_not_full_transcript.py` | ✅ 37s | — | `evidence/D6/` | 🟡 |
 
 ---
@@ -88,7 +88,7 @@
 | P1 → P2 | B1–B3、E1–E2 全 ✅ | ⬜ |
 | P2 → P3 | B4–B5、E3 全 ✅ | ⬜ |
 | **P3 → P4（V1 关键门）** | C1–C4、C6 全 ✅ | ⬜ |
-| P4 → P5 | C8–C10、D1–D5 全 ✅ | ⬜ |
+| P4 → P5 | C8–C10、D1–D2、D4–D5 全 ✅ | ⬜ |
 | P5 → P6 | C5、C7、D6、E4–E5 全 ✅ | ⬜ |
 | P6 切换 | 全表 ✅ + 档位 3 全量双跑 | ⬜ |
 
@@ -98,6 +98,7 @@
 
 | 项 | surface | 理由 |
 |---|---|---|
+| **交互终端（Web UI 内 PTY）** | `terminals/`、`test_new_shell*.py` | **决定：整个 V1 不做，Go 侧首次实现。** Python 版终端栈绑死 `tmux -S <unix-socket>`（全仓库 85 处），Windows 无 Unix domain socket，移植需把寻址改成 `-L <name>` 并改 11 个 native bridge —— 成本远超收益。Pi harness 自带 bash 工具，agent 执行命令不依赖它；人要看文件直接用系统终端开 `E:/tmp/omnigent-sessions/<sid>/workspace` 等价。**时机：Go 重构到基本可用后，在 Go 里用 `creack/pty`（POSIX）/ ConPTY（Windows）首次实现**，不背 Python 的 tmux 包袱 |
 | `pi-native`（真 TUI 包装） | Native 终端 | V1 只做 `harness: pi`（RPC 子进程）。native TUI 需 tmux + 文件 inbox bridge + 2 825 行 JS extension，属 V2 |
 | 托管沙箱（Modal/Daytona/E2B/K8s） | 全部 | V1 只支持本机 runner；`/v1/sandbox-providers` 返回空 catalog，前端已有降级路径 |
 | Databricks onboarding / 凭据刷新 | Web 新会话 | V1 用环境变量单 provider；`CredentialProvider` 接口已预留 |

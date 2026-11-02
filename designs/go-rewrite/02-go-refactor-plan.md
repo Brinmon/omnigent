@@ -77,7 +77,7 @@
 | MCP | `modelcontextprotocol/go-sdk`（官方，Apache-2.0，v1.8+，支持 2026-07-28 协议且向后兼容） |
 | CEL 策略 | `cel-expr/cel-go`（原 `google/cel-go` 已迁址，只读兼容仓库） |
 | 全文检索 | V1 用 `ILIKE`/`LIKE lower(...)` + 索引；PostgreSQL 侧沿用 `pg_trgm` |
-| 终端（PTY） | `creack/pty`（POSIX）；tmux 用 one-shot `tmux` 子进程或 `tmux -CC` 控制模式 |
+| 终端（PTY） | **V1 不做**（见 §风险表）；后续用 `creack/pty`（POSIX）/ ConPTY（Windows），不沿用 Python 的 tmux 栈 |
 | 指标/追踪 | OpenTelemetry Go（`otelhttp`、`otelsql`） |
 | 测试 | 标准库 `testing` + `stretchr/testify`；E2E 用 `testscript` 或 Go 版 httptest 打真 server |
 | 构建 | `goreleaser` + `ko`；SPA 用 `go:embed`（见 §6） |
@@ -280,10 +280,10 @@ SPA 复用：沿用 `web/` 原样构建，`go:embed all:webdist` 打包；开发
 | **P1 骨架** | oapi-codegen 接入；chi 路由；SQLite/pgx + sqlc；`/v1/info`、`/v1/me`、`/v1/harnesses`、`/v1/sessions` CRUD、`/v1/sessions/{id}/items` | 前端能打开会话列表与历史（只读） | 1.5 |
 | **P2 实时** | SSE hub（57 事件 + 序列号 + 心跳 + `[DONE]`）、`WS /v1/sessions/updates`、`POST /events` | 前端能发消息并看到流式（假 agent 回显） | 1.5 |
 | **P3 runner + Pi** | runner 二进制、隧道双端、会话初始化、`agent/pi` RPC 实现、EventSink→SSE、工具服务器 + JS extension 模板 | 真 pi 跑通一轮 + 工具调用 + 中断 | 3.0 |
-| **P4 策略与资源** | CEL 引擎、`PHASE_REQUEST`/`PHASE_TOOL_CALL`、ASK 卡片 round-trip；终端（PTY/tmux）、文件、工作区 | 策略拦截与批准可见；终端可用 | 2.0 |
+| **P4 策略与资源** | CEL 引擎、`PHASE_REQUEST`/`PHASE_TOOL_CALL`、ASK 卡片 round-trip；文件、工作区 | 策略拦截与批准可见；文件树可用 | 1.5 |
 | **P5 硬化** | 压缩、fork/resume、usage/成本、presence、错误码一致、并发/取消、OpenTelemetry | 全量 L1–L4 绿 | 2.0 |
 | **P6 切换** | 双跑、开关、文档、卸载 Python 侧代码路径 | 默认走 Go，Python 保留一版回退 | 1.0 |
-| 合计 | | | **12 周**（含 20% 缓冲） |
+| 合计 | | | **12 周**（阶段和 10.5 周 + 20% 缓冲；终端移出 V1 后比原估少 0.5 周） |
 
 **可并行度**：P2 与 P3 可并行（两人）；P4 独立。3 人 ≈ 6–8 周。
 
@@ -299,7 +299,8 @@ SPA 复用：沿用 `web/` 原样构建，`go:embed all:webdist` 打包；开发
 | **旧库读不出来** | 已有数据的用户升级即崩 | P0 先做 L4；`Uuid16`/`CompressedText`/enum 三者逐字节对齐 |
 | **多 agent 抽象过度** | V1 只有 Pi，过早抽象导致空转 | 只抽 §4 的 4 个 interface，不抽「工具执行器」「终端」「沙箱」；Pi 未用到的能力返回 `ErrUnsupported` |
 | **无 Sandbox/托管能力** | 现有 Python 用户依赖 Modal 等 | V1 明确不支持；`/v1/sandbox-providers` 返回空 catalog，前端已有降级路径 |
-| **CGO / 跨平台** | Windows 无 PTY、SQLite 需 CGO | `modernc.org/sqlite`（纯 Go）；PTY 在 Windows 走 ConPTY（`UserExistsError/conpty`），或 V1 声明 Windows 终端功能降级 |
+| **CGO / 跨平台** | Windows 无 PTY、SQLite 需 CGO | `modernc.org/sqlite`（纯 Go）；**V1 不做交互终端**，避开了 PTY/tmux 这块 |
+| **终端栈是 tmux 特有包袱** | Python 版 85 处 `tmux -S <unix-socket>`，Windows 无 Unix domain socket | **P4 不含终端**。V1 期间人要看文件就用系统终端开 workspace 目录，等价。Go 基本可用后再用 `creack/pty`/ConPTY 首次实现，不背 tmux 包袱 |
 | **工期被低估** | 578 K 行的心理压力导致「全搬」冲动 | 严守 §2 切片；用 `code-migration` skill 的 rulebook + gap inventory 把「哪些不搬」写成规则 |
 
 ---

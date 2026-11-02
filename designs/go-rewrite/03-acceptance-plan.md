@@ -177,7 +177,7 @@ export NO_PROXY=127.0.0.1,localhost
 |---|---|---|---|
 | D1 | `PHASE_REQUEST` / `PHASE_TOOL_CALL` 拦截生效 | `tests/e2e_ui/approvals/` | ☐ |
 | D2 | CEL 表达式策略与 Python 结果一致 | 对拍：同表达式同事件 | ☐ |
-| D3 | 终端（PTY）创建 / 读 / 写 / 关闭 | `tests/e2e_ui/shells/` | ☐ |
+| D3 | ~~终端（PTY）创建 / 读 / 写 / 关闭~~ | — | 🚫 **V1 不做** |
 | D4 | 文件上载 / 下载 / 列表 | `tests/e2e_ui/files/` | ☐ |
 | D5 | 工作区文件树与内容搜索 | `tests/e2e_ui/files/` | ☐ |
 | D6 | Fork 会话（历史带过去且与父隔离） | `tests/e2e_ui/fork_session/` | ☐ |
@@ -330,7 +330,7 @@ evidence/<ID>/
 | P1 骨架 | B1–B3, E1–E2 | 前端能只读浏览会话 |
 | P2 实时 | B4–B5, E3 | 前端能发消息看到流式 |
 | P3 runner + Pi | C1–C4, C6 | **V1 的关键门**：真 Pi 跑通一轮+工具+中断 |
-| P4 策略与资源 | C8–C10, D1–D5 | 策略拦截可见、终端可用 |
+| P4 策略与资源 | C8–C10, D1–D2, D4–D5 | 策略拦截可见、文件树可用 |
 | P5 硬化 | C5, C7, D6, E4–E5 | 全 P0 全绿 |
 | P6 切换 | 全表 + 一次档位 3 全量双跑 | 默认走 Go |
 
