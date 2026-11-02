@@ -57,6 +57,7 @@ class _RecordingClient:
 
     def __init__(self, response: _Resp | None = None, *, info: _Resp | None = None) -> None:
         self.calls: list[tuple[str, str, dict[str, object] | None]] = []
+        self.creation_headers = None
         self._response = response or _Resp(body={"id": "t1"})
         self._info = info or _Resp(
             body={"scheduled_task_projects": True, "scheduled_task_session_modes": True}
@@ -66,7 +67,10 @@ class _RecordingClient:
         self.calls.append(("GET", url, None))
         return self._info if url == "/v1/info" else self._response
 
-    async def post(self, url: str, *, json: dict | None = None, timeout: object = None) -> _Resp:
+    async def post(
+        self, url: str, *, json: dict | None = None, timeout: object = None, headers=None
+    ) -> _Resp:
+        self.creation_headers = headers
         self.calls.append(("POST", url, json))
         return self._response
 
@@ -101,6 +105,7 @@ async def test_create_posts_payload() -> None:
         ),
         server_client=client,
     )
+    assert client.creation_headers == {"x-omnigent-automation-source": "agent"}
     verb, url, body = client.calls[-1]
     assert (verb, url) == ("POST", "/v1/scheduled-tasks")
     assert body == {
@@ -243,9 +248,16 @@ class _ProjectsClient(_RecordingClient):
         self.calls.append(("GET", url, None))
         return _Resp(body={"data": list(self.projects)})
 
-    async def post(self, url: str, *, json: dict | None = None, timeout: object = None) -> _Resp:
+    async def post(
+        self,
+        url: str,
+        *,
+        json: dict | None = None,
+        timeout: object = None,
+        headers: dict[str, str] | None = None,
+    ) -> _Resp:
         if url != "/v1/projects":
-            return await super().post(url, json=json, timeout=timeout)
+            return await super().post(url, json=json, timeout=timeout, headers=headers)
         self.calls.append(("POST", url, json))
         if self.create_status == 409:
             # Another request created the same name first.

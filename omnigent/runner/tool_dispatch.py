@@ -4939,7 +4939,12 @@ async def _execute_scheduled_task_tool(
                 return refusal
             if project_name is not None:
                 payload["project_id"] = await _project_id_for_name(server_client, project_name)
-            resp = await server_client.post("/v1/scheduled-tasks", json=payload, timeout=30.0)
+            resp = await server_client.post(
+                "/v1/scheduled-tasks",
+                json=payload,
+                timeout=30.0,
+                headers={"x-omnigent-automation-source": "agent"},
+            )
         elif tool_name in ("sys_scheduled_task_update", "sys_scheduled_task_delete"):
             task_id = args.get("scheduled_task_id")
             if not task_id:
