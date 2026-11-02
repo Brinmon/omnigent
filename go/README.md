@@ -26,6 +26,7 @@ internal/policy/     CEL policy evaluation
 internal/runner/     per-session runner (P3)
 internal/store/      SQLite access
 internal/stream/     session event fan-out (ordering, backpressure, SSE wire format)
+internal/toolbridge/ loopback tool endpoint + generated Pi extension
 testdata/            Python-written reference database (the compatibility oracle)
 ```
 

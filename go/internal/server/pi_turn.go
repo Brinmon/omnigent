@@ -161,6 +161,21 @@ func (s *Server) runPiTurn(
 		_ = os.WriteFile(filepath.Join(agentDir, "models.json"), source, 0o644)
 	}
 
+	// The tool bridge is what makes Omnigent's tools visible to Pi and its native
+	// tool calls gated. Without it Pi runs entirely inside its own process and
+	// nothing here can observe or stop a tool call.
+	bridge, extensionPath, cleanupBridge, err := s.startToolBridge(turnCtx, sessionID, workdir)
+	if err != nil {
+		cancel()
+		return fmt.Errorf("start tool bridge: %w", err)
+	}
+	defer cleanupBridge()
+	var extraArgs []string
+	if extensionPath != "" {
+		extraArgs = append(extraArgs, "--extension", extensionPath)
+	}
+	_ = bridge
+
 	slog.Debug("pi turn starting",
 		"session", sessionID,
 		"entry", config.entry,
@@ -175,6 +190,7 @@ func (s *Server) runPiTurn(
 		// unrelated instruction set and answers into it instead of the turn.
 		SystemPrompt:  "You are an expert coding assistant operating inside Omnigent.",
 		DisableSkills: true,
+		ExtraArgs:     extraArgs,
 		Cwd:           workdir,
 		Env:           s.piEnv(agentDir),
 	})

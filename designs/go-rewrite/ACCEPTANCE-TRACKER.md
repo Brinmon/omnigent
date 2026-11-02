@@ -44,7 +44,7 @@
 | ID | 判据 | 用例 | 基线 | Go | 证据 | 勾 |
 |---|---|---|---|---|---|---|
 | C1 | 真 `pi --mode rpc` 一轮问答（`agent_settled` 边界） | `go test ./internal/pi/ -run TestLaunchAndPrompt` | ✅ 36s | ✅ 2s | `evidence/C1/` | ✅ |
-| C2 | 工具调用往返（TCP 工具服务器 + JS extension） | `tests/e2e/omnigent/test_pi_long_tool_turn.py` | ❌ 59s | — | `evidence/C2/` | ⛔ |
+| C2 | 工具调用往返（TCP 工具服务器 + JS extension） | 基线 `test_pi_long_tool_turn.py`；Go `TestRealPiCallsBridgedTool` | ❌ 脚手架缺陷 | ✅ 6.1s | `evidence/C2/` | ✅ |
 | C3 | 工具历史复用（次轮回用不重调） | 官方 `tool-history`；用 `mock` 排两轮 | ⬜ | — | `evidence/C3/` | ⬜ |
 | C4 | 中断后同会话可继续 | `go test ./internal/pi/ -run TestAbortSettlesTurn` | ✅ 8s | ✅ 2s | `evidence/C4/` | ✅ |
 | C5 | thinking / reasoning 流式渲染 | `tests/e2e/omnigent/test_pi_thinking_compatibility_e2e.py` | ✅ 186s | — | `evidence/C5/` | 🟡 |

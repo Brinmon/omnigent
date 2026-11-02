@@ -99,6 +99,9 @@ type LaunchOptions struct {
 	// DisableSkills suppresses Pi's skill discovery, which keeps a run from
 	// picking up whatever the host has installed.
 	DisableSkills bool
+	// ExtraArgs are appended verbatim, for flags this layer does not model
+	// (``--extension`` for the tool bridge, ``--tools`` for a restricted set).
+	ExtraArgs []string
 	// Cwd is the working directory the harness sees.
 	Cwd string
 	// Env is the complete child environment. It is not merged with the parent:
@@ -134,6 +137,9 @@ func Launch(ctx context.Context, opts LaunchOptions) (*Session, error) {
 		args = append(args, "--append-system-prompt", opts.SystemPromptAppend)
 	} else if opts.SystemPrompt != "" {
 		args = append(args, "--append-system-prompt", "")
+	}
+	if len(opts.ExtraArgs) > 0 {
+		args = append(args, opts.ExtraArgs...)
 	}
 
 	cmd := exec.CommandContext(ctx, opts.Entry[0], args...)
