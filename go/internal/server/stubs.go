@@ -719,11 +719,6 @@ func (s *Server) GetSessionSignInLinkV1SessionsSessionIdSignInLinkGet(w http.Res
 	notImplemented(w, "GetSessionSignInLinkV1SessionsSessionIdSignInLinkGet")
 }
 
-// StreamSessionV1SessionsSessionIdStreamGet is not implemented in P1.
-func (s *Server) StreamSessionV1SessionsSessionIdStreamGet(w http.ResponseWriter, r *http.Request, sessionId string, params api.StreamSessionV1SessionsSessionIdStreamGetParams) {
-	notImplemented(w, "StreamSessionV1SessionsSessionIdStreamGet")
-}
-
 // OpenFileV1SessionsSessionIdUiOpenFilePost is not implemented in P1.
 func (s *Server) OpenFileV1SessionsSessionIdUiOpenFilePost(w http.ResponseWriter, r *http.Request, sessionId string) {
 	notImplemented(w, "OpenFileV1SessionsSessionIdUiOpenFilePost")

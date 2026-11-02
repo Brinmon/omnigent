@@ -113,3 +113,4 @@ designs/go-rewrite/evidence/baseline/pi-agent-dir/
 # when a test opens the checked-in reference database.
 go/testdata/*.db-shm
 go/testdata/*.db-wal
+go/.omnigent-go.exe

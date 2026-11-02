@@ -23,6 +23,7 @@
 | A4 | `ServerStreamEvent` **56** 变体 `type` 集合一致 | `run-contract.sh A4`（`go test ./internal/event/`） | — | ✅ 1s | `evidence/contract/A4/` | ✅ |
 | A5 | 旧库（Python 写）Go 可直读 | `run-contract.sh A5`（真 Python 生成的 `go/testdata/reference.db`） | — | ✅ 2s | `evidence/contract/A5/` | ✅ |
 | A6 | Uuid16 / SMALLINT 枚举 / CompressedText 兼容 | `run-contract.sh A6`（zstd 帧 + raw 帧 + 旧 TEXT + 旧 BLOB 四态） | — | ✅ 2s | `evidence/contract/A6/` | ✅ |
+| A7 | Go 与 Python 对同一库返回一致 JSON | `run-contract.sh A7`（`compare-servers.py` 双后端实跑） | — | ✅ 7s | `evidence/contract/A7/` | ✅ |
 
 ---
 

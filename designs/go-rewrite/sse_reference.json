@@ -1,0 +1,87 @@
+{
+  "frames": [
+    {
+      "data": {
+        "sequence_number": null,
+        "server_time": null,
+        "type": "session.heartbeat"
+      },
+      "event": "session.heartbeat",
+      "raw": "event: session.heartbeat\ndata: {\"sequence_number\": null, \"type\": \"session.heartbeat\", \"server_time\": null}"
+    },
+    {
+      "data": {
+        "child": {
+          "agent_id": null,
+          "agent_name": null,
+          "busy": false,
+          "created_at": 1760000001,
+          "current_task_id": null,
+          "current_task_status": null,
+          "id": "97103e22d51bd99b35ac8d43e6bbfcb8",
+          "kind": "sub_agent",
+          "labels": {},
+          "last_message_preview": "Fixture message.",
+          "last_task_error": null,
+          "object": "child_session",
+          "parent_session_id": "8355b79284d928ed79e946c765a6e9c0",
+          "pending_elicitations_count": 0,
+          "routed_model": null,
+          "routing_decision_id": null,
+          "session_name": null,
+          "task_summary": null,
+          "title": "Sub-agents",
+          "tool": "Sub-agents",
+          "updated_at": 1760000001
+        },
+        "child_session_id": "97103e22d51bd99b35ac8d43e6bbfcb8",
+        "conversation_id": "8355b79284d928ed79e946c765a6e9c0",
+        "sequence_number": null,
+        "type": "session.child_session.updated"
+      },
+      "event": "session.child_session.updated",
+      "raw": "event: session.child_session.updated\ndata: {\"sequence_number\": null, \"type\": \"session.child_session.updated\", \"conversation_id\": \"8355b79284d928ed79e946c765a6e9c0\", \"child_session_id\": \"97103e22d51bd99b35ac8d43e6bbfcb8\", \"child\": {\"id\": \"97103e22d51bd99b35ac8d43e6bbfcb8\", \"object\": \"child_session\", \"parent_session_id\": \"8355b79284d928ed79e946c765a6e9c0\", \"title\": \"Sub-agents\", \"task_summary\": null, \"tool\": \"Sub-agents\", \"session_name\": null, \"kind\": \"sub_agent\", \"created_at\": 1760000001, \"updated_at\": 1760000001, \"agent_id\": null, \"agent_name\": null, \"current_task_id\": null, \"current_task_status\": null, \"busy\": false, \"labels\": {}, \"last_task_error\": null, \"last_message_preview\": \"Fixture message.\", \"pending_elicitations_count\": 0, \"routed_model\": null, \"routing_decision_id\": null}}"
+    },
+    {
+      "data": {
+        "environment_id": "default",
+        "sequence_number": null,
+        "session_id": "8355b79284d928ed79e946c765a6e9c0",
+        "type": "session.changed_files.invalidated"
+      },
+      "event": "session.changed_files.invalidated",
+      "raw": "event: session.changed_files.invalidated\ndata: {\"sequence_number\": null, \"type\": \"session.changed_files.invalidated\", \"session_id\": \"8355b79284d928ed79e946c765a6e9c0\", \"environment_id\": \"default\"}"
+    },
+    {
+      "data": {
+        "conversation_id": "8355b79284d928ed79e946c765a6e9c0",
+        "sequence_number": null,
+        "type": "session.presence",
+        "viewers": []
+      },
+      "event": "session.presence",
+      "raw": "event: session.presence\ndata: {\"sequence_number\": null, \"type\": \"session.presence\", \"conversation_id\": \"8355b79284d928ed79e946c765a6e9c0\", \"viewers\": []}"
+    },
+    {
+      "data": {
+        "sequence_number": null,
+        "server_time": null,
+        "type": "session.heartbeat"
+      },
+      "event": "session.heartbeat",
+      "raw": "event: session.heartbeat\ndata: {\"sequence_number\": null, \"type\": \"session.heartbeat\", \"server_time\": null}"
+    }
+  ],
+  "headers": {
+    "cache-control": "no-cache",
+    "content-type": "text/event-stream; charset=utf-8",
+    "date": "Mon, 02 Nov 2026 09:05:31 GMT",
+    "server": "uvicorn",
+    "transfer-encoding": "chunked",
+    "x-accel-buffering": "no",
+    "x-omnigent-stream-epoch": "56840-17c96ca16f194406852044bfb4388344",
+    "x-request-id": "901a9fe11eeb4af4a4ba6c548effe44d"
+  },
+  "session_id": "8355b79284d928ed79e946c765a6e9c0",
+  "status": 200
+}

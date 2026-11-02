@@ -7,15 +7,19 @@
 package server
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
 	"github.com/Brinmon/omnigent/go/internal/api"
 	"github.com/Brinmon/omnigent/go/internal/db"
 	"github.com/Brinmon/omnigent/go/internal/store"
+	"github.com/Brinmon/omnigent/go/internal/stream"
 )
 
 // Server implements api.ServerInterface.
@@ -30,6 +34,11 @@ type Server struct {
 	// single-user local, so it is fixed; a multi-user build derives it from the
 	// request.
 	userID string
+	// streams owns the live event fan-out, one hub per session.
+	streams *stream.Registry
+	// streamEpoch identifies this process's stream generation so a client that
+	// reconnects after a restart knows its cached snapshot may be stale.
+	streamEpoch string
 }
 
 // compile-time proof that this type satisfies the generated interface. The
@@ -39,9 +48,11 @@ var _ api.ServerInterface = (*Server)(nil)
 // New builds a Server over the given database.
 func New(conn *sql.DB, version string) *Server {
 	return &Server{
-		queries: store.New(conn),
-		version: version,
-		userID:  "local",
+		queries:     store.New(conn),
+		version:     version,
+		userID:      "local",
+		streams:     stream.NewRegistry(),
+		streamEpoch: streamEpochValue(os.Getpid(), time.Now()),
 	}
 }
 
@@ -52,6 +63,14 @@ func New(conn *sql.DB, version string) *Server {
 func (s *Server) Router() http.Handler {
 	router := chi.NewRouter()
 	router.Use(recoverJSON)
+	// The WebSocket handshake cannot be described by openapi.json, so its
+	// routes are mounted beside the generated ones rather than through
+	// HandlerFromMux (which would answer a handshake with 426 Upgrade
+	// Required).
+	// Register the WebSocket route before the generated ones so it wins the
+	// match; HandlerFromMux would otherwise answer the upgrade with 426.
+	router.Get("/v1/sessions/updates", s.handleSessionUpdates)
+	router.Post("/v1/sessions/{session_id}/events", s.PostEventV1SessionsSessionIdEventsPost)
 	api.HandlerFromMux(s, router)
 	return router
 }
@@ -153,6 +172,12 @@ func (s *Server) ListSessionsV1SessionsGet(
 // Ids go out as bare 32-char hex and timestamps as Unix epoch seconds, which is
 // what the document declares and what the client's date formatting expects.
 func (s *Server) sessionListItem(r *http.Request, row store.Conversation) api.SessionListItem {
+	return s.sessionListItemFor(r.Context(), row)
+}
+
+// sessionListItemFor is sessionListItem without an *http.Request, for callers
+// that only hold a context (the WebSocket diff loop).
+func (s *Server) sessionListItemFor(ctx context.Context, row store.Conversation) api.SessionListItem {
 	// agent_id is nullable on disk but a required string in the document, so a
 	// session with no bound agent reports the empty string rather than a
 	// fabricated id.
@@ -179,7 +204,7 @@ func (s *Server) sessionListItem(r *http.Request, row store.Conversation) api.Se
 	// delete, the timestamp catches an add or an edit. A session with no comments
 	// reports a zero count and no timestamp, matching the Python server (which
 	// omits the key rather than sending 0).
-	commentsCount, commentsUpdatedAt := s.commentFingerprint(r, row.ID)
+	commentsCount, commentsUpdatedAt := s.commentFingerprint(ctx, row.ID)
 
 	item := api.SessionListItem{
 		Id:                       row.ID.String(),
@@ -205,7 +230,7 @@ func (s *Server) sessionListItem(r *http.Request, row store.Conversation) api.Se
 	// A dangling agent_id leaves the field absent, matching the Python server's
 	// "None when the agent row cannot be found".
 	if !row.AgentID.IsZero() {
-		if agent, err := s.queries.GetAgent(r.Context(), store.GetAgentParams{
+		if agent, err := s.queries.GetAgent(ctx, store.GetAgentParams{
 			WorkspaceID: s.workspace,
 			ID:          row.AgentID,
 		}); err == nil {
@@ -221,8 +246,8 @@ func (s *Server) sessionListItem(r *http.Request, row store.Conversation) api.Se
 //
 // A query failure is not fatal for the list: the fingerprint is a cache
 // invalidation hint, so a session still renders without it.
-func (s *Server) commentFingerprint(r *http.Request, id db.Uuid16) (int64, *int64) {
-	row, err := s.queries.GetCommentFingerprint(r.Context(), store.GetCommentFingerprintParams{
+func (s *Server) commentFingerprint(ctx context.Context, id db.Uuid16) (int64, *int64) {
+	row, err := s.queries.GetCommentFingerprint(ctx, store.GetCommentFingerprintParams{
 		WorkspaceID:    s.workspace,
 		ConversationID: id[:],
 	})
