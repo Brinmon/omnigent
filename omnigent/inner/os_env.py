@@ -561,6 +561,13 @@ class _HelperProcessClient:
 
         helper_cwd = self.cwd
         credential_runtime: CredentialProxyRuntime | None = None
+        if IS_WINDOWS and not sandbox.active:
+            # Windows hands the helper its config as a file because subprocess
+            # there cannot pass fds, so every helper needs a private tmpdir even
+            # when no sandbox is active. Without this the launcher raises
+            # ``assert self._tmpdir is not None`` and all filesystem and terminal
+            # calls fail on an ``os_env: {sandbox: {type: none}}`` spec.
+            self._tmpdir = create_private_tmpdir()
         if sandbox.active:
             self._tmpdir = create_private_tmpdir()
             sandbox = with_additional_write_roots(sandbox, [self._tmpdir])

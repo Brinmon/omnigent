@@ -1,0 +1,11 @@
+id: C8
+description: policy ASK round trip
+result: PASS
+exit_code: 0
+duration_s: 6
+mode: noui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e/test_pi_extension_ui_round_trip.py
+tail: Running 2 items in this shard ss [100%] 2 skipped in 0.53s 

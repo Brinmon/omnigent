@@ -1,0 +1,11 @@
+id: E5
+description: unread survives reload
+result: PASS
+exit_code: 0
+duration_s: 43
+mode: ui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e_ui/sessions/test_sidebar_mark_unread.py
+tail: Running 2 items in this shard .. [100%] 2 passed in 35.37s 

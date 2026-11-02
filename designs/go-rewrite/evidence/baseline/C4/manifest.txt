@@ -1,0 +1,11 @@
+id: C4
+description: interrupt then continue
+result: PASS
+exit_code: 0
+duration_s: 8
+mode: noui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e/test_pi_interrupt_reap_budget_race_e2e.py
+tail: Running 2 items in this shard .. [100%] 2 passed in 1.82s 

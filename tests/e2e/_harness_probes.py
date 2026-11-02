@@ -24,6 +24,7 @@ from functools import cache
 
 import pytest
 
+from omnigent._platform import IS_WINDOWS
 from tests._model_pools import resolve_model
 
 
@@ -174,11 +175,17 @@ def cli_unavailable_reason(binary: str) -> str | None:
 
     try:
         proc = subprocess.run(
-            _cli_probe_args(binary),
+            _cli_probe_args(path or binary),
             capture_output=True,
             text=True,
-            timeout=15,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
             check=False,
+            # Windows resolves ``pi`` to an npm ``.cmd`` shim, which is not a
+            # PE image: CreateProcess cannot launch it directly. A shell runs
+            # it through cmd.exe. POSIX shims are executable scripts.
+            shell=IS_WINDOWS,
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         return f"{binary!r} CLI at {path!r} is not runnable: {exc}"

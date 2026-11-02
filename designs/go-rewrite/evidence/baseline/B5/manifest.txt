@@ -1,0 +1,11 @@
+id: B5
+description: WS /v1/sessions/updates increments
+result: PASS
+exit_code: 0
+duration_s: 58
+mode: ui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e_ui/sessions/test_session_updates_stream.py
+tail: Running 3 items in this shard ... [100%] 3 passed in 50.58s 

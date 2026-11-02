@@ -55,6 +55,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from omnigent._platform import IS_WINDOWS
 from tests._helpers.compat import apply_server_env, compat_server_cwd, server_executable
 
 # Project root — this file lives at tests/_helpers/live_server.py.
@@ -151,6 +152,13 @@ def isolated_process_env(
         OMNIGENT_DISABLE_CATALOG_LOOKUP="1",
         OMNIGENT_DISABLE_TELEMETRY="1",
     )
+    # Windows resolves ``Path.home()`` from USERPROFILE, not HOME. Without it a
+    # child that reads a home-rooted default (e.g. ``~/.databrickscfg``) raises
+    # "Could not determine home directory" before it can run. Only USERPROFILE is
+    # set: a HOMEDRIVE/HOMEPATH pair built from a POSIX-style path would produce a
+    # non-absolute value that breaks child CLI startup.
+    if IS_WINDOWS:
+        env["USERPROFILE"] = str(home)
     for name, value in overrides.items():
         if value is None:
             env.pop(name, None)

@@ -140,6 +140,8 @@ def _runner_resource_write_payload(
     if content_type not in {"application/json", "text/plain", "text/html", ""}:
         content_type = "other"
     request_id = response.headers.get("x-request-id", "")
+    # The runner answers JSON for every handled failure; a non-JSON body means
+    # the exception escaped its handlers, so the body itself is the only clue.
     _logger.error(
         "Runner resource mutation returned an unreadable response",
         extra=debug_event(
@@ -149,6 +151,7 @@ def _runner_resource_write_payload(
             http_status=response.status_code,
             response_kind=kind,
             response_bytes=len(response.content),
+            response_body=response.text[:2000],
             content_type=content_type or "missing",
             server_request_id=request_id
             if re.fullmatch(r"[0-9a-fA-F-]{16,64}", request_id)

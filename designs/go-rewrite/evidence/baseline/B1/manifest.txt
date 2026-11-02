@@ -1,0 +1,11 @@
+id: B1
+description: SPA boot + /v1/info /v1/me /v1/harnesses
+result: PASS
+exit_code: 0
+duration_s: 43
+mode: ui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e_ui/chat/test_smoke.py
+tail: Running 1 items in this shard . [100%] 1 passed in 35.96s 

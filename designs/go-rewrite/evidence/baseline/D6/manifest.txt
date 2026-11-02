@@ -1,0 +1,11 @@
+id: D6
+description: fork keeps history, stays isolated
+result: PASS
+exit_code: 0
+duration_s: 37
+mode: ui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e_ui/fork_session/test_fork_from_middle.py
+tail: Running 1 items in this shard . [100%] 1 passed in 29.30s 

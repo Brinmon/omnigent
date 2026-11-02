@@ -1,0 +1,11 @@
+id: D1
+description: PHASE_REQUEST / PHASE_TOOL_CALL gate
+result: PASS
+exit_code: 0
+duration_s: 36
+mode: ui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e_ui/approvals/test_approval_card.py
+tail: Running 2 items in this shard .. [100%] 2 passed in 27.86s 

@@ -18,6 +18,7 @@ import logging
 import os
 import re
 import time
+import traceback
 import uuid
 from collections import OrderedDict
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
@@ -2450,6 +2451,32 @@ def create_runner_app(
             status_code=status,
             content={"error": error},
         )
+
+    @app.exception_handler(Exception)
+    async def _handle_unexpected_error(
+        request: Request,
+        exc: Exception,
+    ) -> JSONResponse:
+        """Keep every failure JSON so callers can read a reason.
+
+        Without this, an exception raised outside the handlers above reaches
+        uvicorn's default ``ServerErrorMiddleware`` and becomes a plain
+        ``text/plain: Internal Server Error`` body. The server proxy then
+        reports "invalid response" and the real cause is lost.
+        """
+        _logger.exception(
+            "Unhandled exception in runner route %s %s",
+            request.method,
+            request.url.path,
+        )
+        detail: dict[str, object] = {
+            "code": "internal_error",
+            "message": f"{type(exc).__name__}: {exc}",
+        }
+        # Surface the traceback only where leaking internals is already allowed.
+        if os.environ.get("OMNIGENT_DEBUG_ERRORS"):
+            detail["traceback"] = traceback.format_exc()
+        return JSONResponse(status_code=500, content={"error": detail})
 
     @app.get("/health")
     async def health() -> dict[str, str]:

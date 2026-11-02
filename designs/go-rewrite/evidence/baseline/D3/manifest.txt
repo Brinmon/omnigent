@@ -1,0 +1,11 @@
+id: D3
+description: terminal create/read/write/close
+result: FAIL
+exit_code: 1
+duration_s: 414
+mode: ui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e_ui/shells/test_new_shell.py
+tail: 

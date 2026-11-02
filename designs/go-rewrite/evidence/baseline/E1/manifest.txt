@@ -1,0 +1,11 @@
+id: E1
+description: rename / pin / archive / delete
+result: PASS
+exit_code: 0
+duration_s: 78
+mode: ui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e_ui/sessions/test_sidebar_rename.py tests/e2e_ui/sessions/test_sidebar_pin_unpin.py tests/e2e_ui/sessions/test_sidebar_delete.py tests/e2e_ui/sessions/test_archived_session_header_menu.py
+tail: Running 9 items in this shard ......... [100%] 9 passed in 71.35s (0:01:11) 

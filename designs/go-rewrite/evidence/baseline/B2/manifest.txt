@@ -1,0 +1,11 @@
+id: B2
+description: session list renders in sidebar
+result: PASS
+exit_code: 0
+duration_s: 47
+mode: ui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e_ui/sessions/test_sidebar_search.py tests/e2e_ui/sessions/test_sidebar_rename.py
+tail: Running 4 items in this shard .... [100%] 4 passed in 39.75s 

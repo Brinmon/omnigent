@@ -1,0 +1,11 @@
+id: C7
+description: compaction + get_messages
+result: FAIL
+exit_code: 1
+duration_s: 54
+mode: noui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e/test_pi_compact_restart_resume.py
+tail: =========================== short test summary info =========================== FAILED tests/e2e/test_pi_compact_restart_resume.py::test_pi_compacted_session_resumes_compacted_after_restart 1 failed in 48.30s 

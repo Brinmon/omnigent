@@ -1,0 +1,11 @@
+id: E4
+description: presence co-viewers
+result: PASS
+exit_code: 0
+duration_s: 71
+mode: ui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e_ui/collaboration/test_collab_realtime.py
+tail: Running 3 items in this shard ... [100%] 3 passed in 63.99s (0:01:03) 

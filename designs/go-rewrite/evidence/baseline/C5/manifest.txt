@@ -1,0 +1,11 @@
+id: C5
+description: thinking / reasoning stream
+result: PASS
+exit_code: 0
+duration_s: 186
+mode: noui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e/omnigent/test_pi_thinking_compatibility_e2e.py
+tail: Running 10 items in this shard .......... [100%] 10 passed in 177.72s (0:02:57) 

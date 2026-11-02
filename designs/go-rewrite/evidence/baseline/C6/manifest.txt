@@ -1,0 +1,11 @@
+id: C6
+description: provider retry recovery
+result: PASS
+exit_code: 0
+duration_s: 34
+mode: noui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e/omnigent/test_pi_retry_recovery_e2e.py
+tail: Running 1 items in this shard . [100%] 1 passed in 26.99s 

@@ -65,10 +65,18 @@ def test_pi_launch_sends_supported_thinking(
     config_home = tmp_path / "config"
     config_home.mkdir()
     (config_home / "config.yaml").write_text(yaml.safe_dump(config))
+    # Windows needs the system/config vars for Winsock init and home lookup; a
+    # bare PATH-only env raises WinError 10106 importing asyncio, and
+    # Path.home() raises without USERPROFILE.
+    _keep = {"PATH", "LANG", "LC_ALL", "SYSTEMROOT", "SYSTEMDRIVE", "WINDIR",
+             "COMSPEC", "PATHEXT", "TEMP", "TMP", "USERPROFILE", "HOMEDRIVE",
+             "HOMEPATH", "APPDATA", "LOCALAPPDATA", "PROGRAMDATA", "PROGRAMFILES",
+             "PROGRAMFILES(X86)", "PROGRAMW6432", "NUMBER_OF_PROCESSORS",
+             "PROCESSOR_ARCHITECTURE", "USERNAME", "OS"}
     env = isolated_process_env(
         tmp_path / "home",
         {"OMNIGENT_CONFIG_HOME": str(config_home), "PI_OFFLINE": "1"},
-        {key: value for key, value in os.environ.items() if key in {"PATH", "LANG", "LC_ALL"}},
+        {key: value for key, value in os.environ.items() if key in _keep},
     )
     if transport == "native":
         monkeypatch.setattr(
@@ -112,7 +120,14 @@ def test_pi_launch_sends_supported_thinking(
     configure_mock_llm(mock_llm_server_url, [{"text": "THINKING_OK"}], key=model)
     before = len(get_mock_requests(mock_llm_server_url, key=model))
     result = subprocess.run(
-        command, env=env, cwd=tmp_path, capture_output=True, text=True, timeout=90
+        command,
+        env=env,
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=90,
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert "THINKING_OK" in result.stdout

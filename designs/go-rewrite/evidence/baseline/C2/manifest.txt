@@ -1,0 +1,11 @@
+id: C2
+description: tool call round trip
+result: FAIL
+exit_code: 1
+duration_s: 59
+mode: noui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e/omnigent/test_pi_long_tool_turn.py
+tail: FAILED tests/e2e/omnigent/test_pi_long_tool_turn.py::test_pi_survives_long_tool_calling_turn[short-idle-budget] FAILED tests/e2e/omnigent/test_pi_long_tool_turn.py::test_pi_survives_long_tool_calling_turn[production-idle-budget] 2 failed in 52.06s 

@@ -104,3 +104,7 @@ deploy/databricks/.databricks/
 web/package-lock.json
 # Generated demo recordings belong in PR evidence or artifacts, not Git.
 recordings/
+designs/go-rewrite/evidence/baseline/*/playwright/
+designs/go-rewrite/evidence/baseline/*/*.log
+designs/go-rewrite/evidence/baseline/*.tsv
+designs/go-rewrite/evidence/baseline/pi-agent-dir/

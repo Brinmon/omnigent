@@ -295,10 +295,6 @@ def default_interactive_shell() -> str:
 
     :returns: A shell basename such as ``"zsh"``, ``"fish"``, or ``"bash"``.
     """
-    if IS_WINDOWS:
-        # Native tmux/PTY terminals are unsupported on Windows anyway.
-        return "bash"
-
     shell = os.environ.get("SHELL", "").strip()
     name = os.path.basename(shell)
     if name in _KNOWN_INTERACTIVE_SHELLS:
@@ -309,6 +305,15 @@ def default_interactive_shell() -> str:
             return name
         if _resolve_interactive_shell(name):
             return name
+    if IS_WINDOWS:
+        # Windows has no ``$SHELL``. Prefer a real POSIX shell when one is
+        # installed (Git for Windows, MSYS2, WSL), since that is what the
+        # terminal's tmux control mode drives; otherwise fall back to the
+        # COMSPEC command interpreter.
+        for candidate in _OFFERED_INTERACTIVE_SHELLS:
+            if _resolve_interactive_shell(candidate):
+                return candidate
+        return Path(os.environ.get("COMSPEC", "cmd.exe")).stem or "cmd"
     return "bash"
 
 
@@ -326,10 +331,6 @@ def installed_interactive_shells() -> list[str]:
     :returns: Basenames such as ``["zsh", "bash", "fish"]`` — the default first.
     """
     ordered = [default_interactive_shell()]
-    if IS_WINDOWS:
-        # Native tmux/PTY terminals are unsupported on Windows anyway; the lone
-        # bash default from above is all we can meaningfully offer.
-        return ordered
 
     for name in _OFFERED_INTERACTIVE_SHELLS:
         if name not in ordered and _resolve_interactive_shell(name):

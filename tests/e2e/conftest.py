@@ -213,7 +213,9 @@ def wait_for_server(base_url: str, timeout: float = 20.0) -> None:
             resp = httpx.get(f"{base_url}/health", timeout=2.0)
             if resp.status_code == 200:
                 return
-        except httpx.ConnectError:
+        except (httpx.ConnectError, httpx.ConnectTimeout):
+            # Windows reports a timed-out connect (not a refused one) on the
+            # first attempt against a freshly bound loopback port.
             pass
         time.sleep(POLL_INTERVAL_S)
     raise RuntimeError(f"Server did not respond within {timeout}s")
@@ -310,9 +312,10 @@ def _mock_llm_server_process(log_dir: Path) -> Iterator[str]:
             resp = httpx.get(f"{base_url}/stats", timeout=1.0)
             if resp.status_code == 200:
                 break
-        except httpx.ConnectError:
-            # Expected while the mock server is still booting.
-            continue
+        except (httpx.ConnectError, httpx.ConnectTimeout):
+            # Expected while the mock server is still booting. Windows reports a
+            # timed-out connect (not a refused one) on the first attempt.
+            pass
         time.sleep(0.1)
     else:
         proc.kill()

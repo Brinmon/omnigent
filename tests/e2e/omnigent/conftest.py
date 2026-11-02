@@ -40,8 +40,10 @@ def _resolve_venv_python() -> Path:
 
     Git worktrees don't have their own ``.venv`` — they share the
     main checkout's venv. Walk up the directory tree from the
-    current repo root, looking for ``.venv/bin/python`` in this
+    current repo root, looking for the venv interpreter in this
     directory then in each parent, stopping when we find one.
+    The interpreter path is platform-specific: POSIX puts it at
+    ``.venv/bin/python``, Windows at ``.venv/Scripts/python.exe``.
     Stops at the filesystem root if none is found (which surfaces
     the misconfiguration loudly from the fixture).
 
@@ -49,18 +51,23 @@ def _resolve_venv_python() -> Path:
     :raises RuntimeError: If no venv python is found up to the
         filesystem root.
     """
+    candidates = (
+        Path(".venv") / "bin" / "python",
+        Path(".venv") / "Scripts" / "python.exe",
+    )
     current = _OMNIGENT_REPO
     while True:
-        candidate = current / ".venv" / "bin" / "python"
-        if candidate.is_file():
-            return candidate
+        for relative in candidates:
+            candidate = current / relative
+            if candidate.is_file():
+                return candidate
         if current.parent == current:
             # Reached filesystem root without finding a venv.
             raise RuntimeError(
-                f"no .venv/bin/python found walking up from "
-                f"{_OMNIGENT_REPO} — worktrees share the main "
-                f"checkout's venv, so one parent of this path "
-                f"should contain ``.venv``."
+                f"no venv python found walking up from {_OMNIGENT_REPO} "
+                f"(looked for {', '.join(str(c) for c in candidates)}) — "
+                f"worktrees share the main checkout's venv, so one parent "
+                f"of this path should contain ``.venv``."
             )
         current = current.parent
 
@@ -202,8 +209,11 @@ def mock_llm_server_url(
             resp = httpx.get(f"{base_url}/stats", timeout=1.0)
             if resp.status_code == 200:
                 break
-        except httpx.ConnectError:
-            continue
+        except (httpx.ConnectError, httpx.ConnectTimeout):
+            # Windows can report a timed-out connect (not a refused one) while
+            # the socket is still binding; both mean "not up yet". Sleep below
+            # so the retry loop cannot spin.
+            pass
         time.sleep(0.1)
     else:
         proc.kill()

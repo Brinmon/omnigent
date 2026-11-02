@@ -1,0 +1,11 @@
+id: B3
+description: history hydration after reload
+result: PASS
+exit_code: 0
+duration_s: 50
+mode: ui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e_ui/chat/test_initial_history_loading.py tests/e2e_ui/chat/test_reload_continue.py
+tail: Running 3 items in this shard ... [100%] 3 passed in 44.09s 
