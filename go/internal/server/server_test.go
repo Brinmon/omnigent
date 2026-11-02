@@ -50,6 +50,14 @@ func loadGolden(t *testing.T) golden {
 // noticed later.
 func newTestServer(t *testing.T) *httptest.Server {
 	t.Helper()
+	// Which model id a provider actually serves is a deployment fact, not
+	// something the build can discover, so the suite pins one the provider is
+	// known to answer. Without it the default pick may resolve to an id that
+	// returns an empty reply, which would make a protocol test fail for a
+	// reason that has nothing to do with the protocol.
+	if os.Getenv("OMNIGENT_PI_MODEL") == "" {
+		t.Setenv("OMNIGENT_PI_MODEL", "openai/deepseek-v4.1-flash")
+	}
 	src, err := os.ReadFile(referenceDB)
 	if err != nil {
 		t.Fatalf("missing %s; run `python designs/go-rewrite/make-reference-db.py`: %v",

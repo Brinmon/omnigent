@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -39,6 +40,15 @@ type Server struct {
 	// streamEpoch identifies this process's stream generation so a client that
 	// reconnects after a restart knows its cached snapshot may be stale.
 	streamEpoch string
+	// pi is how to launch the harness, or why it cannot be launched. Resolved
+	// once at startup so a turn does not pay for the lookup, and so a build with
+	// no Pi installed still serves the read API and can say why.
+	pi piConfig
+	// activeTurns tracks the running turn per session so an interrupt can cancel
+	// exactly one, and so a second message during a turn is refused rather than
+	// queued behind an unbounded number of children.
+	turnsMu     sync.Mutex
+	activeTurns map[string]context.CancelFunc
 }
 
 // compile-time proof that this type satisfies the generated interface. The
@@ -53,6 +63,8 @@ func New(conn *sql.DB, version string) *Server {
 		userID:      "local",
 		streams:     stream.NewRegistry(),
 		streamEpoch: streamEpochValue(os.Getpid(), time.Now()),
+		pi:          resolvePiConfig(),
+		activeTurns: make(map[string]context.CancelFunc),
 	}
 }
 

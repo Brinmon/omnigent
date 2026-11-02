@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -163,13 +162,13 @@ func (s *Server) applyEvent(ctx context.Context, sessionID string, input session
 
 	switch input.Type {
 	case "message":
-		return s.echoTurn(ctx, sessionID, hub, input)
+		if err := s.runTurn(ctx, sessionID, input); err != nil {
+			return nil, err
+		}
+		return map[string]any{"ok": true, "type": input.Type}, nil
 
 	case "interrupt":
-		// With no running turn there is nothing to interrupt, but the client
-		// still needs the acknowledgement: it has already flipped its own UI to
-		// "stopped" and waits for the server's confirmation.
-		s.publishStatus(ctx, sessionID, hub, "idle")
+		s.interruptTurn(ctx, sessionID, hub)
 		return map[string]any{"ok": true, "type": input.Type}, nil
 
 	case "approval", "function_call_output":
@@ -183,40 +182,66 @@ func (s *Server) applyEvent(ctx context.Context, sessionID string, input session
 	}
 }
 
-// echoTurn walks one turn's status edges and publishes them.
+// runTurn starts a real turn against Pi.
 //
-// The ordering mirrors a real turn: status running, a user message, the
-// assistant's reply, then idle. A client that renders this sequence correctly
-// will render a real turn too, because the frames are the same kind and order.
-func (s *Server) echoTurn(
+// The turn runs asynchronously: the POST acknowledges acceptance and the client
+// follows progress on the session stream, which is the protocol the web app
+// already implements. A start failure is reported on this response so the client
+// does not wait for events that will never come.
+func (s *Server) runTurn(
 	ctx context.Context,
 	sessionID string,
-	hub *stream.Hub,
 	input sessionEventInput,
-) (map[string]any, error) {
+) error {
 	excerpt := userMessageText(input.Data)
+	if excerpt == "" {
+		return errors.New("message has no text content")
+	}
+	hub := s.streams.ForSession(sessionID)
 
-	s.publishStatus(ctx, sessionID, hub, "running")
+	s.turnsMu.Lock()
+	if _, busy := s.activeTurns[sessionID]; busy {
+		s.turnsMu.Unlock()
+		// A second message during a turn would spawn a second child; the client
+		// is expected to steer or wait, so this is a client error rather than a
+		// queue.
+		return errors.New("a turn is already running for this session")
+	}
+	turnCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), piTurnTimeout)
+	s.activeTurns[sessionID] = cancel
+	s.turnsMu.Unlock()
 
-	// The assistant echo is deliberately marked so nobody mistakes it for a
-	// model response when reading a transcript from this build.
-	reply := "This build has no language model attached yet, so this is an echo of your message: " + excerpt
+	// runPiTurn runs the whole turn and returns when it ends, so this goroutine
+	// owns the registry slot for the turn's full lifetime. Releasing the slot
+	// when runPiTurn merely *launched* the child would kill it immediately.
+	go func() {
+		defer func() {
+			s.turnsMu.Lock()
+			delete(s.activeTurns, sessionID)
+			s.turnsMu.Unlock()
+			cancel()
+		}()
+		if err := s.runPiTurn(turnCtx, sessionID, hub, excerpt); err != nil {
+			s.publishPiFailure(turnCtx, sessionID, hub, "harness", err.Error())
+		}
+	}()
+	return nil
+}
 
-	finished := time.Now().UTC().Format(time.RFC3339Nano)
-	hub.Publish(stream.Event{
-		Type: "response.completed",
-		Payload: map[string]any{
-			"type":            "response.completed",
-			"conversation_id": sessionID,
-			"sequence_number": nil,
-			"text":            reply,
-			"echo":            true,
-			"completed_at":    finished,
-		},
-	})
-
+// interruptTurn cancels the session's running turn, if any.
+//
+// With no turn in flight there is nothing to stop, but the client still gets its
+// acknowledgement: it has already flipped its own UI and waits for the server's
+// confirmation.
+func (s *Server) interruptTurn(ctx context.Context, sessionID string, hub *stream.Hub) {
+	s.turnsMu.Lock()
+	cancel, running := s.activeTurns[sessionID]
+	s.turnsMu.Unlock()
+	if running {
+		cancel()
+		return
+	}
 	s.publishStatus(ctx, sessionID, hub, "idle")
-	return map[string]any{"ok": true, "type": input.Type}, nil
 }
 
 // publishStatus emits a status transition.

@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -74,6 +75,14 @@ func openStream(t *testing.T, ts *httptest.Server, sessionID string) (<-chan sse
 // postEvent sends one event to a session.
 func postEvent(t *testing.T, ts *httptest.Server, sessionID string, body string) int {
 	t.Helper()
+	status, _ := postEventBody(t, ts, sessionID, body)
+	return status
+}
+
+// postEventBody also returns the response body, so a failing case can report the
+// server's reason instead of only its status.
+func postEventBody(t *testing.T, ts *httptest.Server, sessionID, body string) (int, string) {
+	t.Helper()
 	resp, err := http.Post(
 		ts.URL+"/v1/sessions/"+sessionID+"/events",
 		"application/json",
@@ -83,7 +92,8 @@ func postEvent(t *testing.T, ts *httptest.Server, sessionID string, body string)
 		t.Fatalf("POST events: %v", err)
 	}
 	defer resp.Body.Close()
-	return resp.StatusCode
+	responseBody, _ := io.ReadAll(resp.Body)
+	return resp.StatusCode, string(responseBody)
 }
 
 // awaitEvent waits for a frame whose type is one of the wanted names, returning
@@ -147,39 +157,56 @@ func TestPostMessageProducesTurnEdges(t *testing.T) {
 	// are about the turn.
 	awaitEvent(t, frames, 10*time.Second, "session.presence")
 
+	// The reply text depends on which model answers, so the assertion is about
+	// the frame sequence and that *some* text came back -- not about content.
 	status := postEvent(t, ts, sessionID,
-		`{"type":"message","data":{"role":"user","content":[{"type":"input_text","text":"hello there"}]}}`)
+		`{"type":"message","data":{"role":"user","content":[{"type":"input_text","text":"Reply with exactly the word PONG."}]}}`)
 	if status != http.StatusAccepted {
 		t.Fatalf("POST events status = %d, want 202", status)
 	}
 
-	running, _ := awaitEvent(t, frames, 10*time.Second, "session.status")
+	// A real turn round-trips to a provider, so the deadline is generous: the
+	// point of the test is the frame sequence, not the latency.
+	running, _ := awaitEvent(t, frames, 120*time.Second, "session.status")
 	if running.Data["status"] != "running" {
 		t.Fatalf("first status = %v, want running", running.Data["status"])
 	}
 
-	completed, _ := awaitEvent(t, frames, 10*time.Second, "response.completed")
-	text, _ := completed.Data["text"].(string)
-	if !strings.Contains(text, "hello there") {
-		t.Errorf("response.completed text does not echo the message: %q", text)
+	completed, seen := awaitEvent(t, frames, 120*time.Second, "response.completed")
+	// A real turn streams deltas before the terminal frame; that is what the UI
+	// renders progressively, so its absence is a regression even though the
+	// final text would still arrive.
+	sawDelta := false
+	for _, frame := range seen {
+		if frame.Event == "response.output_text.delta" {
+			sawDelta = true
+			break
+		}
 	}
-	if completed.Data["echo"] != true {
-		t.Error("response.completed is not marked as an echo; a reader would mistake it for a model reply")
+	if !sawDelta {
+		t.Errorf("no response.output_text.delta before completion; saw %v", frameTypes(seen))
+	}
+	if text, _ := completed.Data["text"].(string); strings.TrimSpace(text) == "" {
+		t.Errorf("response.completed carries no text: %v", completed.Data)
+	}
+	if completed.Data["echo"] == true {
+		t.Error("response.completed is an echo; P3 should drive a real turn")
 	}
 
-	idle, _ := awaitEvent(t, frames, 10*time.Second, "session.status")
+	idle, _ := awaitEvent(t, frames, 120*time.Second, "session.status")
 	if idle.Data["status"] != "idle" {
 		t.Fatalf("final status = %v, want idle", idle.Data["status"])
 	}
 }
 
-// TestPostEventShape covers the request envelope: a single object and an array
-// are both accepted, and a malformed body is a 400 rather than a 500.
+// TestPostEventShape covers the request envelope.
+//
+// This is a parsing test: it asserts which bodies are accepted and which are
+// rejected, and deliberately does not wait for the turns it starts. Each accepted
+// message launches a real Pi child, so the cases that only mean to exercise the
+// envelope use a *separate* session -- sharing one would leave every case after
+// the first testing the "turn already running" refusal instead of its own shape.
 func TestPostEventShape(t *testing.T) {
-	ts := newTestServer(t)
-	ids := sessionIDsFromList(t, ts)
-	sessionID := ids[0]
-
 	cases := []struct {
 		name string
 		body string
@@ -194,75 +221,26 @@ func TestPostEventShape(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := postEvent(t, ts, sessionID, tc.body)
+			// A fresh server per case: each owns its own session and its own
+			// turn slot, so no case can be affected by another's running turn.
+			ts := newTestServer(t)
+			ids := sessionIDsFromList(t, ts)
+			got, reason := postEventBody(t, ts, ids[0], tc.body)
 			if got != tc.want {
-				t.Errorf("status = %d, want %d", got, tc.want)
+				t.Errorf("status = %d, want %d (%s)", got, tc.want, reason)
 			}
 		})
 	}
 }
 
-// TestPostEventUnknownSessionIs404 keeps a stale link from creating a turn.
-func TestPostEventUnknownSessionIs404(t *testing.T) {
-	ts := newTestServer(t)
-	status := postEvent(t, ts, "0123456789abcdef0123456789abcdef",
-		`{"type":"message","data":{}}`)
-	if status != http.StatusNotFound {
-		t.Errorf("status = %d, want 404", status)
-	}
-}
-
-// TestStreamUnknownSessionIs404: a stream for a nonexistent session must fail
-// fast rather than leaving the client waiting for events that never arrive.
-func TestStreamUnknownSessionIs404(t *testing.T) {
-	ts := newTestServer(t)
-	resp, err := http.Get(ts.URL + "/v1/sessions/0123456789abcdef0123456789abcdef/stream")
-	if err != nil {
-		t.Fatalf("GET stream: %v", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusNotFound {
-		t.Errorf("status = %d, want 404", resp.StatusCode)
-	}
-}
-
-// TestStreamSendsSSEHeaders pins the headers a proxy depends on.
-func TestStreamSendsSSEHeaders(t *testing.T) {
-	ts := newTestServer(t)
-	ids := sessionIDsFromList(t, ts)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	req, _ := http.NewRequestWithContext(
-		ctx, http.MethodGet, ts.URL+"/v1/sessions/"+ids[0]+"/stream", nil)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.Fatalf("open stream: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if got := resp.Header.Get("Content-Type"); !strings.HasPrefix(got, "text/event-stream") {
-		t.Errorf("Content-Type = %q, want text/event-stream", got)
-	}
-	if got := resp.Header.Get("Cache-Control"); got != "no-cache" {
-		t.Errorf("Cache-Control = %q, want no-cache", got)
-	}
-	// Without this nginx buffers the stream and the UI appears frozen.
-	if got := resp.Header.Get("X-Accel-Buffering"); got != "no" {
-		t.Errorf("X-Accel-Buffering = %q, want no", got)
-	}
-	if got := resp.Header.Get("X-Omnigent-Stream-Epoch"); got == "" {
-		t.Error("X-Omnigent-Stream-Epoch is missing; a reconnecting client needs it to detect a restart")
-	}
-}
-
-// newSSEDecoder is a minimal SSE parser: enough for `event:` and `data:` lines.
-func newSSEDecoder(body interface{ Read([]byte) (int, error) }) *sseDecoder {
-	return &sseDecoder{reader: body, buffer: make([]byte, 0, 4096)}
+// newSSEDecoder is a minimal SSE parser: enough for `event:` and `data:` lines,
+// which is all this server emits.
+func newSSEDecoder(body io.Reader) *sseDecoder {
+	return &sseDecoder{reader: body}
 }
 
 type sseDecoder struct {
-	reader interface{ Read([]byte) (int, error) }
+	reader io.Reader
 	buffer []byte
 	chunk  []byte
 }

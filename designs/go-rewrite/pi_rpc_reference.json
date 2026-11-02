@@ -1,0 +1,674 @@
+[
+  {
+    "type": "response",
+    "command": "prompt",
+    "success": true,
+    "data": {
+      "disposition": "started"
+    }
+  },
+  {
+    "type": "agent_start"
+  },
+  {
+    "type": "turn_start"
+  },
+  {
+    "type": "message_start",
+    "message": {
+      "role": "system",
+      "content": "",
+      "sections": {
+        "preamble": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.",
+        "tools": "<tools>\n- read: Read file contents\n- bash: Execute bash commands (ls, grep, find, etc.)\n- edit: Make precise file edits with exact text replacement, including multiple disjoint edits in one call\n- write: Create or overwrite files\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>",
+        "rules": "<rules>\n- Use bash for file operations like ls, rg, find\n- Use read to examine files instead of cat or sed.\n- You can inspect PI_* environment variables for current model and session details.\n- Use edit for precise changes (edits[].oldText must match exactly)\n- When changing multiple separate locations in one file, use one edit call with multiple entries in edits[] instead of multiple edit calls\n- Each edits[].oldText is matched against the original file, not after earlier edits are applied. Do not emit overlapping or nested edits. Merge nearby changes into one edit.\n- Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions.\n- Use write only for new files or complete rewrites.\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>",
+        "docs": "<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: C:\\Users\\28591\\.pi\\agent\\install\\releases\\1.4.0\\node_modules\\@earendil-works\\pi-coding-agent\\README.md\n- Additional docs: C:\\Users\\28591\\.pi\\agent\\install\\releases\\1.4.0\\node_modules\\@earendil-works\\pi-coding-agent\\docs\n- Examples: C:\\Users\\28591\\.pi\\agent\\install\\releases\\1.4.0\\node_modules\\@earendil-works\\pi-coding-agent\\examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>",
+        "project_context": "<project_context>\nProject-specific instructions and guidelines:\n\n<project_instructions path=\"E:\\GitCode\\omnigent\\AGENTS.md\">\n# Agent guidance\r\n\r\nGuidance for AI agents (Claude Code, Copilot, Cursor, etc.) working in this\r\nrepository. See `CONTRIBUTING.md` for the full contributor workflow.\r\n\r\n## Reuse and design\r\n\r\n- Search for and reuse existing helpers before adding code. Refactor an existing\r\n  implementation if that avoids duplication.\r\n- Use descriptive names; avoid unexplained abbreviations and single-letter names.\r\n\r\n## Test changes\r\n\r\nBefore adding test setup, read [the test guide](tests/README.md) and\r\n[primitive catalog](tests/_helpers/README.md), then inspect the nearest scenario.\r\nReuse sufficient coverage unchanged or extend a compatible scenario. Keep input\r\nmatrices at the lowest reliable layer; retain E2E for distinct process, transport\r\nor browser boundaries. Reuse primitives with explicit caller inputs and keep\r\nfaults and assertions in the test. Explain new setup or a separate E2E in the\r\nPR's Test Plan (Repro uses `evidence`; Resolve uses `test_audit`). Count helper changes in\r\ntest LOC; fewer lines alone do not establish adequate coverage.\r\n\r\n- Add a unit test for non-trivial functions, methods, and exported APIs. Add\r\n  coverage when changed behavior needs it.\r\n- Run the relevant tests before submitting. Document unrelated pre-existing\r\n  failures in the PR description.\r\n\r\n## Dependency changes\r\n\r\nWhen raising a dependency floor or adding a dependency, keep it installable from\r\npackage mirrors that embargo new releases (see the dependency notes in\r\n`CONTRIBUTING.md`) and run `just check-internal-mirror` when you can reach the\r\nDatabricks PyPI proxy. If a mirror lacks the version you need, keep the floor\r\nbelow it and pin the newer release only in `uv.lock`; do not work around the\r\nmirror with a local or temporary index. Never add the `dependency-floor-approved`\r\nlabel yourself; a human maintainer adds it after checking the mirror.\r\n\r\n## Committing\r\n\r\nThe `pre-commit` hooks are the local gate, and CI runs the same checks. They\r\nrun on `git commit` and again on `git push` only after they are installed:\r\n`just ensure` does that (or `just hooks` on its own), once per clone. Worktrees\r\nshare the clone's `.git`, so one install covers them all.\r\n\r\n- Never pass `--no-verify`. A hook failure is a finding to fix, not a gate to\r\n  skip; the push hook will fail on the same commits anyway.\r\n- Files written through shell heredocs or scripts are unformatted until a hook\r\n  or `just lint` touches them. Before pushing web changes, run\r\n  `cd web && pnpm exec prettier --check .` and read its exit code; do not judge\r\n  hook output by grepping it.\r\n- To check by hand, `just lint` runs the hooks over staged files and\r\n  `just lint-all` over the whole tree. Fix what they report, re-stage, commit.\r\n\r\n## Local development shortcuts\r\n\r\nUse `just` for common tasks; run `just --list` for grouped recipes.\r\n\r\n- `just ensure` \u2014 install/check prerequisites, including the git hooks\r\n- `just run-ios` / `just run-android` \u2014 build/run mobile apps\r\n- `just dev` / `just dev-mobile` \u2014 start the omnigent dev pod\r\n- `just electron-dev` / `just electron-build` \u2014 Electron desktop shell\r\n- `just lint` / `just lint-all` \u2014 run pre-commit; `just hooks` \u2014 install the git hooks\r\n- `just normalize-locks` \u2014 rewrite lockfile registries to PyPI/npmjs.org\r\n\r\n## Pull requests\r\n\r\nWhen you open a pull request, fill in the repo's PR template at\r\n`.github/pull_request_template.md` (case-sensitive on Linux \u2014 note the lowercase\r\nfilename). Keep every section and checkbox row so reviewers can skim them,\r\nexcept the optional Changelog section as described below.\r\n\r\n- **Summary** \u2014 what changed and why.\r\n- **Test Plan** \u2014 how you verified it.\r\n- **Demo** \u2014 a **video or images** showing the change. Expected on contributor\r\n  PRs for UI / frontend changes (check the \"UI / frontend change\" box under\r\n  *Type of change*) so reviewers can see the new behaviour without checking out\r\n  the branch. Use `N/A` for non-visual changes.\r\n- **Type of change** / **Test coverage** \u2014 check all that apply (at least one\r\n  each).\r\n- **Coverage notes** \u2014 required if you checked \"Manual verification completed\"\r\n  or \"Not applicable\".\r\n- **Release notes** \u2014 choose exactly one Yes/No checkbox and keep both rows.\r\n  Choose Yes only for outstanding user-facing features, bug fixes, UX changes,\r\n  and breaking changes. Breaking changes must choose Yes. Features behind a\r\n  feature flag are eligible only once the flag is enabled for users. Choose No\r\n  for small fixes or improvements, features behind disabled flags, and internal\r\n  changes with no user impact. This is the author's recommendation for\r\n  maintainers curating the release notes.\r\n- **Changelog** \u2014 if Release notes is Yes, write one line describing the change\r\n  for users, including compatibility impact for breaking changes. If No, delete\r\n  this section; the complete changelog still credits the PR using its title.\r\n\r\nGenerate the description from the actual diff and this session's context \u2014 lead\r\nwith the motivation, then the change. Don't pass a `--body` that skips these\r\nsections.\r\n\r\n### Demo media\r\n\r\nDo not commit screenshots or recordings created only as PR or issue evidence.\r\nUpload them as GitHub attachments and embed the attachment URLs in the PR's\r\nDemo section or issue comments. Keep local captures outside the tracked tree,\r\nand redact private data before uploading.\r\n\r\nCommit media only when it serves maintained documentation, product assets, or\r\ntest baselines, not merely to obtain a public demo URL. If attachment upload is\r\nunavailable, explain the limitation and ask for help instead of committing the\r\nfiles as a workaround.\r\n\r\n## Finishing a task\r\n\r\nWhen you finish a task, print instructions to the user on how to test it: the\r\ncommands to run, the inputs to provide, or the steps to reproduce so they can\r\nverify the result themselves. Prefer verification that is best performed by a\r\nhuman, such as concrete manual behavior checks, rather than only listing unit\r\ntest commands. Don't leave the user guessing how to confirm the work \u2014 tell\r\nthem exactly what to do.\r\n\r\nTo drive the app yourself and prove a user-facing change on every entry point a\r\nuser can reach, start with `feature-map/README.md`, then read the relevant maps and linked skills.\r\n\r\n## Deprecating features\r\n\r\nWhen deprecating a feature, note the version in which it is expected to be\r\nremoved so we can clean it up when that version ships. Call out the deprecation\r\nversion in code (e.g. a `@deprecated` tag or comment naming the target release)\r\nand in the PR/commit description, so there's a clear marker to act on later.\r\n\r\n## Code comments\r\n\r\nKeep comments short and focused on the code, not on the change history.\r\n\r\n- **Keep them brief** \u2014 prefer one or two lines. Avoid comments longer than\r\n  three lines; if you need more, the code likely needs refactoring or a doc\r\n  string, not a wall of inline commentary.\r\n- **Describe the scenario, not the PR** \u2014 explain *what* the code handles or\r\n  *why* it exists, in terms a future reader needs. Don't reference PR numbers,\r\n  issue numbers, or ticket IDs (e.g. `#1646`, `fixes JIRA-123`); the scenario\r\n  should be clear without chasing external links.\r\n\r\n## Database query names\r\n\r\nApplication stores use `make_named_managed_session_maker` and give every\r\nsession a stable semantic operation name. The session-level name must describe\r\nthe caller's intent rather than repeat SQL syntax; use a nested\r\n`query_name_scope` only when one transaction needs distinct names for important\r\nsubqueries. Because the named session covers implicit flush and commit, don't\r\nadd an explicit `flush()` only to make a query name observable.\r\n\r\n## Framework-owned instructions\r\n\r\nKeep runtime lifecycle and metadata instructions separate from portable agent\r\ninstructions:\r\n\r\n- Agent-spec and per-request instructions are user-authored. Framework-owned\r\n  instructions are additive runtime behavior and are appended after them in\r\n  `omnigent/runtime/prompt.py`.\r\n- Keep the canonical instruction text and lifecycle gate in the owning framework\r\n  module. Harness adapters should only transport the composed instructions; do\r\n  not duplicate policy across adapters or add lifecycle metadata to `AgentSpec`.\r\n- If framework instructions grow beyond a small ordered list, introduce a\r\n  structured `FrameworkInstructions` value at the prompt-composition boundary.\r\n\n</project_instructions>\n</project_context>",
+        "skills": "<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>archify</name>\n    <description>Create polished, validated architecture, workflow, sequence, data-flow, and lifecycle/state diagrams as explorable standalone HTML with inline SVG, dark/light themes, optional trace motion, and PNG/JPEG/WebP/SVG/WebM export. Accept plain-language requirements or pasted Mermaid flowchart, sequenceDiagram, and stateDiagram input; inspect repository evidence when the diagram must reflect real code. Use when the user asks to visualize system architecture, infrastructure, cloud/security/network topology, technical workflows, API call sequences, request lifecycles, data pipelines, ETL/ELT, data lineage, state machines, or to convert/beautify Mermaid.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\archify\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>artifact-graph-builder</name>\n    <description>Build a reusable file-level relationship graph dataset for an installed closed-source software package from its program directory and optional reverse-engineering evidence directory. Use when the user asks to enumerate an installation tree, extract executable metadata/imports/exports/strings/sections/signatures, classify source status, infer file relationships, assess products and modules, record analysis failures, or produce standardized graph JSON plus an offline viewer.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\artifact-graph-builder\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>computer-use</name>\n    <description>Use Orca&apos;s computer-use CLI to inspect and operate local desktop app windows through accessibility trees, screenshots, and safe UI actions. Use for desktop app interaction: list apps/windows, get app state, read visible UI, click controls, type, press keys, scroll, drag, set values, or perform accessibility actions. Also use for browser windows, webviews, Orca app UI, or other desktop UI. Triggers include &quot;computer use&quot;, &quot;orca computer&quot;, &quot;read Spotify&quot;, &quot;read Slack&quot;, &quot;control/click/read in a desktop app&quot;, and &quot;get app state&quot;.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\computer-use\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>domain-modeling</name>\n    <description>Build and sharpen a project&apos;s domain model. Use when discussing codebase terminology, writing or editing a GLOSSARY.md, or recording or editing an ADR.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\domain-modeling\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>grill-me</name>\n    <description>A relentless interview to sharpen a plan or design.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\grill-me\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>grill-with-docs</name>\n    <description>A relentless interview to sharpen a plan or design, which also creates docs (ADR&apos;s and glossary) as we go.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\grill-with-docs\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>grilling</name>\n    <description>Grill the user relentlessly about a plan or design. Use when the user wants to stress-test a plan before building, or uses any &apos;grill&apos; trigger phrases.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\grilling\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>manual-trigger-bridge</name>\n    <description>Bridge manual GUI-only parsing to programmatic triggering via reverse engineering.\nUse when a PoC file (zip/rar/image/document) can only be triggered by human manual\nactions (right-click extract, drag-drop, open-with, upload) and there is no CLI/command\nthat reproduces the same internal code path. This skill builds a no-GUI harness that\nwalks the same internal dispatch as manual clicking.\nApplies to archive parsers (360Zip, WinRAR), image parsers, document parsers, media parsers\non Windows where GUI filtering and DLL parsing are split.\n</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\manual-trigger-bridge\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>md2html</name>\n    <description>Convert long-form Markdown (plan, spec, system design, RFC, runbook, postmortem, brainstorm, notes) into a single self-contained HTML page with Mermaid diagrams, step timelines, callouts, sidebar TOC. Claude-orange light+dark theme. Multi-language. Portable across Claude Code / Codex / Antigravity / any AI agent.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\md2html\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>officecli</name>\n    <description>Create, analyze, proofread, and modify Office documents (.docx, .xlsx, .pptx) using the officecli CLI tool. Use when the user wants to create, inspect, check formatting, find issues, add charts, or modify Office documents.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\officecli\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>orca-cli</name>\n    <description>Use the public `orca` CLI to operate Orca-managed worktrees, folder contexts, terminals, repos, automations, artifacts, skill sharing, worktree comments, and the browser embedded inside the Orca app. Use when the user says &quot;$orca-cli&quot;, &quot;use orca cli&quot;, &quot;Orca worktree&quot;, &quot;child worktree&quot;, &quot;cardStatus&quot;, &quot;spawn codex/claude in a worktree&quot;, &quot;read/wait/send Orca terminal&quot;, &quot;terminal send&quot;, &quot;full handoff&quot;, &quot;handover&quot;, &quot;give this to another agent&quot;, &quot;another worktree&quot;, &quot;Orca browser&quot;, &quot;orca artifacts&quot;, &quot;share HTML/Markdown&quot;, &quot;public artifact link&quot;, &quot;share skills&quot;, or &quot;control the browser inside Orca&quot;. Prefer this over raw `git worktree`, ad hoc PTYs, Playwright, or Computer Use when the task touches Orca-managed state. Use Computer Use for browser windows, webviews, or desktop UI outside Orca&apos;s embedded browser.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\orca-cli\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>orchestration</name>\n    <description>Use Orca orchestration for structured multi-agent coordination: threaded messages, blocking ask/reply flows, task dispatch, worker_done/escalation waits, task DAGs, decision gates, coordinator loops, or decomposing work across agents. Use `orca-cli` instead for full ownership handoffs, including requests phrased as &quot;hand off&quot;, &quot;handoff&quot;, &quot;handover&quot;, &quot;give this to another agent&quot;, or &quot;another worktree&quot; when the user did not explicitly ask to supervise, monitor, wait for results, or coordinate a DAG. Use `orca-cli` for ordinary terminal control, lightweight terminal prompts, shell commands, Orca worktree management, reading or waiting on terminals, and automation of the browser embedded inside Orca. Use Computer Use for browser windows, webviews, Orca app UI, or desktop UI outside Orca&apos;s embedded browser.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\orchestration\\SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>",
+        "cwd": "<cwd>\nE:/GitCode/omnigent/designs/go-rewrite/.pi-rpc-probe\n</cwd>"
+      },
+      "timestamp": 1793611679214,
+      "toolsAdded": [
+        {
+          "name": "read",
+          "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+          "parameters": {
+            "type": "object",
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path to the file to read (relative or absolute)"
+              },
+              "offset": {
+                "type": "number",
+                "description": "Line number to start reading from (1-indexed)"
+              },
+              "limit": {
+                "type": "number",
+                "description": "Maximum number of lines to read"
+              }
+            }
+          },
+          "constrainedSampling": {
+            "type": "json_schema",
+            "strict": "prefer"
+          }
+        },
+        {
+          "name": "bash",
+          "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+          "parameters": {
+            "type": "object",
+            "required": [
+              "command"
+            ],
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "Shell command to execute"
+              },
+              "timeout": {
+                "type": "number",
+                "description": "Timeout in seconds (optional, no default timeout)"
+              }
+            }
+          },
+          "constrainedSampling": {
+            "type": "json_schema",
+            "strict": "prefer"
+          }
+        },
+        {
+          "name": "edit",
+          "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+          "parameters": {
+            "type": "object",
+            "required": [
+              "path",
+              "edits"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path to the file to edit (relative or absolute)"
+              },
+              "edits": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "oldText",
+                    "newText"
+                  ],
+                  "properties": {
+                    "oldText": {
+                      "type": "string",
+                      "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                    },
+                    "newText": {
+                      "type": "string",
+                      "description": "Replacement text for this targeted edit."
+                    }
+                  }
+                },
+                "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+              }
+            }
+          },
+          "constrainedSampling": {
+            "type": "json_schema",
+            "strict": "prefer"
+          }
+        },
+        {
+          "name": "write",
+          "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+          "parameters": {
+            "type": "object",
+            "required": [
+              "path",
+              "content"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path to the file to write (relative or absolute)"
+              },
+              "content": {
+                "type": "string",
+                "description": "Content to write to the file"
+              }
+            }
+          },
+          "constrainedSampling": {
+            "type": "json_schema",
+            "strict": "prefer"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "type": "message_end",
+    "message": {
+      "role": "system",
+      "content": "",
+      "sections": {
+        "preamble": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.",
+        "tools": "<tools>\n- read: Read file contents\n- bash: Execute bash commands (ls, grep, find, etc.)\n- edit: Make precise file edits with exact text replacement, including multiple disjoint edits in one call\n- write: Create or overwrite files\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>",
+        "rules": "<rules>\n- Use bash for file operations like ls, rg, find\n- Use read to examine files instead of cat or sed.\n- You can inspect PI_* environment variables for current model and session details.\n- Use edit for precise changes (edits[].oldText must match exactly)\n- When changing multiple separate locations in one file, use one edit call with multiple entries in edits[] instead of multiple edit calls\n- Each edits[].oldText is matched against the original file, not after earlier edits are applied. Do not emit overlapping or nested edits. Merge nearby changes into one edit.\n- Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions.\n- Use write only for new files or complete rewrites.\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>",
+        "docs": "<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: C:\\Users\\28591\\.pi\\agent\\install\\releases\\1.4.0\\node_modules\\@earendil-works\\pi-coding-agent\\README.md\n- Additional docs: C:\\Users\\28591\\.pi\\agent\\install\\releases\\1.4.0\\node_modules\\@earendil-works\\pi-coding-agent\\docs\n- Examples: C:\\Users\\28591\\.pi\\agent\\install\\releases\\1.4.0\\node_modules\\@earendil-works\\pi-coding-agent\\examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>",
+        "project_context": "<project_context>\nProject-specific instructions and guidelines:\n\n<project_instructions path=\"E:\\GitCode\\omnigent\\AGENTS.md\">\n# Agent guidance\r\n\r\nGuidance for AI agents (Claude Code, Copilot, Cursor, etc.) working in this\r\nrepository. See `CONTRIBUTING.md` for the full contributor workflow.\r\n\r\n## Reuse and design\r\n\r\n- Search for and reuse existing helpers before adding code. Refactor an existing\r\n  implementation if that avoids duplication.\r\n- Use descriptive names; avoid unexplained abbreviations and single-letter names.\r\n\r\n## Test changes\r\n\r\nBefore adding test setup, read [the test guide](tests/README.md) and\r\n[primitive catalog](tests/_helpers/README.md), then inspect the nearest scenario.\r\nReuse sufficient coverage unchanged or extend a compatible scenario. Keep input\r\nmatrices at the lowest reliable layer; retain E2E for distinct process, transport\r\nor browser boundaries. Reuse primitives with explicit caller inputs and keep\r\nfaults and assertions in the test. Explain new setup or a separate E2E in the\r\nPR's Test Plan (Repro uses `evidence`; Resolve uses `test_audit`). Count helper changes in\r\ntest LOC; fewer lines alone do not establish adequate coverage.\r\n\r\n- Add a unit test for non-trivial functions, methods, and exported APIs. Add\r\n  coverage when changed behavior needs it.\r\n- Run the relevant tests before submitting. Document unrelated pre-existing\r\n  failures in the PR description.\r\n\r\n## Dependency changes\r\n\r\nWhen raising a dependency floor or adding a dependency, keep it installable from\r\npackage mirrors that embargo new releases (see the dependency notes in\r\n`CONTRIBUTING.md`) and run `just check-internal-mirror` when you can reach the\r\nDatabricks PyPI proxy. If a mirror lacks the version you need, keep the floor\r\nbelow it and pin the newer release only in `uv.lock`; do not work around the\r\nmirror with a local or temporary index. Never add the `dependency-floor-approved`\r\nlabel yourself; a human maintainer adds it after checking the mirror.\r\n\r\n## Committing\r\n\r\nThe `pre-commit` hooks are the local gate, and CI runs the same checks. They\r\nrun on `git commit` and again on `git push` only after they are installed:\r\n`just ensure` does that (or `just hooks` on its own), once per clone. Worktrees\r\nshare the clone's `.git`, so one install covers them all.\r\n\r\n- Never pass `--no-verify`. A hook failure is a finding to fix, not a gate to\r\n  skip; the push hook will fail on the same commits anyway.\r\n- Files written through shell heredocs or scripts are unformatted until a hook\r\n  or `just lint` touches them. Before pushing web changes, run\r\n  `cd web && pnpm exec prettier --check .` and read its exit code; do not judge\r\n  hook output by grepping it.\r\n- To check by hand, `just lint` runs the hooks over staged files and\r\n  `just lint-all` over the whole tree. Fix what they report, re-stage, commit.\r\n\r\n## Local development shortcuts\r\n\r\nUse `just` for common tasks; run `just --list` for grouped recipes.\r\n\r\n- `just ensure` \u2014 install/check prerequisites, including the git hooks\r\n- `just run-ios` / `just run-android` \u2014 build/run mobile apps\r\n- `just dev` / `just dev-mobile` \u2014 start the omnigent dev pod\r\n- `just electron-dev` / `just electron-build` \u2014 Electron desktop shell\r\n- `just lint` / `just lint-all` \u2014 run pre-commit; `just hooks` \u2014 install the git hooks\r\n- `just normalize-locks` \u2014 rewrite lockfile registries to PyPI/npmjs.org\r\n\r\n## Pull requests\r\n\r\nWhen you open a pull request, fill in the repo's PR template at\r\n`.github/pull_request_template.md` (case-sensitive on Linux \u2014 note the lowercase\r\nfilename). Keep every section and checkbox row so reviewers can skim them,\r\nexcept the optional Changelog section as described below.\r\n\r\n- **Summary** \u2014 what changed and why.\r\n- **Test Plan** \u2014 how you verified it.\r\n- **Demo** \u2014 a **video or images** showing the change. Expected on contributor\r\n  PRs for UI / frontend changes (check the \"UI / frontend change\" box under\r\n  *Type of change*) so reviewers can see the new behaviour without checking out\r\n  the branch. Use `N/A` for non-visual changes.\r\n- **Type of change** / **Test coverage** \u2014 check all that apply (at least one\r\n  each).\r\n- **Coverage notes** \u2014 required if you checked \"Manual verification completed\"\r\n  or \"Not applicable\".\r\n- **Release notes** \u2014 choose exactly one Yes/No checkbox and keep both rows.\r\n  Choose Yes only for outstanding user-facing features, bug fixes, UX changes,\r\n  and breaking changes. Breaking changes must choose Yes. Features behind a\r\n  feature flag are eligible only once the flag is enabled for users. Choose No\r\n  for small fixes or improvements, features behind disabled flags, and internal\r\n  changes with no user impact. This is the author's recommendation for\r\n  maintainers curating the release notes.\r\n- **Changelog** \u2014 if Release notes is Yes, write one line describing the change\r\n  for users, including compatibility impact for breaking changes. If No, delete\r\n  this section; the complete changelog still credits the PR using its title.\r\n\r\nGenerate the description from the actual diff and this session's context \u2014 lead\r\nwith the motivation, then the change. Don't pass a `--body` that skips these\r\nsections.\r\n\r\n### Demo media\r\n\r\nDo not commit screenshots or recordings created only as PR or issue evidence.\r\nUpload them as GitHub attachments and embed the attachment URLs in the PR's\r\nDemo section or issue comments. Keep local captures outside the tracked tree,\r\nand redact private data before uploading.\r\n\r\nCommit media only when it serves maintained documentation, product assets, or\r\ntest baselines, not merely to obtain a public demo URL. If attachment upload is\r\nunavailable, explain the limitation and ask for help instead of committing the\r\nfiles as a workaround.\r\n\r\n## Finishing a task\r\n\r\nWhen you finish a task, print instructions to the user on how to test it: the\r\ncommands to run, the inputs to provide, or the steps to reproduce so they can\r\nverify the result themselves. Prefer verification that is best performed by a\r\nhuman, such as concrete manual behavior checks, rather than only listing unit\r\ntest commands. Don't leave the user guessing how to confirm the work \u2014 tell\r\nthem exactly what to do.\r\n\r\nTo drive the app yourself and prove a user-facing change on every entry point a\r\nuser can reach, start with `feature-map/README.md`, then read the relevant maps and linked skills.\r\n\r\n## Deprecating features\r\n\r\nWhen deprecating a feature, note the version in which it is expected to be\r\nremoved so we can clean it up when that version ships. Call out the deprecation\r\nversion in code (e.g. a `@deprecated` tag or comment naming the target release)\r\nand in the PR/commit description, so there's a clear marker to act on later.\r\n\r\n## Code comments\r\n\r\nKeep comments short and focused on the code, not on the change history.\r\n\r\n- **Keep them brief** \u2014 prefer one or two lines. Avoid comments longer than\r\n  three lines; if you need more, the code likely needs refactoring or a doc\r\n  string, not a wall of inline commentary.\r\n- **Describe the scenario, not the PR** \u2014 explain *what* the code handles or\r\n  *why* it exists, in terms a future reader needs. Don't reference PR numbers,\r\n  issue numbers, or ticket IDs (e.g. `#1646`, `fixes JIRA-123`); the scenario\r\n  should be clear without chasing external links.\r\n\r\n## Database query names\r\n\r\nApplication stores use `make_named_managed_session_maker` and give every\r\nsession a stable semantic operation name. The session-level name must describe\r\nthe caller's intent rather than repeat SQL syntax; use a nested\r\n`query_name_scope` only when one transaction needs distinct names for important\r\nsubqueries. Because the named session covers implicit flush and commit, don't\r\nadd an explicit `flush()` only to make a query name observable.\r\n\r\n## Framework-owned instructions\r\n\r\nKeep runtime lifecycle and metadata instructions separate from portable agent\r\ninstructions:\r\n\r\n- Agent-spec and per-request instructions are user-authored. Framework-owned\r\n  instructions are additive runtime behavior and are appended after them in\r\n  `omnigent/runtime/prompt.py`.\r\n- Keep the canonical instruction text and lifecycle gate in the owning framework\r\n  module. Harness adapters should only transport the composed instructions; do\r\n  not duplicate policy across adapters or add lifecycle metadata to `AgentSpec`.\r\n- If framework instructions grow beyond a small ordered list, introduce a\r\n  structured `FrameworkInstructions` value at the prompt-composition boundary.\r\n\n</project_instructions>\n</project_context>",
+        "skills": "<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>archify</name>\n    <description>Create polished, validated architecture, workflow, sequence, data-flow, and lifecycle/state diagrams as explorable standalone HTML with inline SVG, dark/light themes, optional trace motion, and PNG/JPEG/WebP/SVG/WebM export. Accept plain-language requirements or pasted Mermaid flowchart, sequenceDiagram, and stateDiagram input; inspect repository evidence when the diagram must reflect real code. Use when the user asks to visualize system architecture, infrastructure, cloud/security/network topology, technical workflows, API call sequences, request lifecycles, data pipelines, ETL/ELT, data lineage, state machines, or to convert/beautify Mermaid.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\archify\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>artifact-graph-builder</name>\n    <description>Build a reusable file-level relationship graph dataset for an installed closed-source software package from its program directory and optional reverse-engineering evidence directory. Use when the user asks to enumerate an installation tree, extract executable metadata/imports/exports/strings/sections/signatures, classify source status, infer file relationships, assess products and modules, record analysis failures, or produce standardized graph JSON plus an offline viewer.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\artifact-graph-builder\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>computer-use</name>\n    <description>Use Orca&apos;s computer-use CLI to inspect and operate local desktop app windows through accessibility trees, screenshots, and safe UI actions. Use for desktop app interaction: list apps/windows, get app state, read visible UI, click controls, type, press keys, scroll, drag, set values, or perform accessibility actions. Also use for browser windows, webviews, Orca app UI, or other desktop UI. Triggers include &quot;computer use&quot;, &quot;orca computer&quot;, &quot;read Spotify&quot;, &quot;read Slack&quot;, &quot;control/click/read in a desktop app&quot;, and &quot;get app state&quot;.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\computer-use\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>domain-modeling</name>\n    <description>Build and sharpen a project&apos;s domain model. Use when discussing codebase terminology, writing or editing a GLOSSARY.md, or recording or editing an ADR.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\domain-modeling\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>grill-me</name>\n    <description>A relentless interview to sharpen a plan or design.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\grill-me\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>grill-with-docs</name>\n    <description>A relentless interview to sharpen a plan or design, which also creates docs (ADR&apos;s and glossary) as we go.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\grill-with-docs\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>grilling</name>\n    <description>Grill the user relentlessly about a plan or design. Use when the user wants to stress-test a plan before building, or uses any &apos;grill&apos; trigger phrases.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\grilling\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>manual-trigger-bridge</name>\n    <description>Bridge manual GUI-only parsing to programmatic triggering via reverse engineering.\nUse when a PoC file (zip/rar/image/document) can only be triggered by human manual\nactions (right-click extract, drag-drop, open-with, upload) and there is no CLI/command\nthat reproduces the same internal code path. This skill builds a no-GUI harness that\nwalks the same internal dispatch as manual clicking.\nApplies to archive parsers (360Zip, WinRAR), image parsers, document parsers, media parsers\non Windows where GUI filtering and DLL parsing are split.\n</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\manual-trigger-bridge\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>md2html</name>\n    <description>Convert long-form Markdown (plan, spec, system design, RFC, runbook, postmortem, brainstorm, notes) into a single self-contained HTML page with Mermaid diagrams, step timelines, callouts, sidebar TOC. Claude-orange light+dark theme. Multi-language. Portable across Claude Code / Codex / Antigravity / any AI agent.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\md2html\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>officecli</name>\n    <description>Create, analyze, proofread, and modify Office documents (.docx, .xlsx, .pptx) using the officecli CLI tool. Use when the user wants to create, inspect, check formatting, find issues, add charts, or modify Office documents.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\officecli\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>orca-cli</name>\n    <description>Use the public `orca` CLI to operate Orca-managed worktrees, folder contexts, terminals, repos, automations, artifacts, skill sharing, worktree comments, and the browser embedded inside the Orca app. Use when the user says &quot;$orca-cli&quot;, &quot;use orca cli&quot;, &quot;Orca worktree&quot;, &quot;child worktree&quot;, &quot;cardStatus&quot;, &quot;spawn codex/claude in a worktree&quot;, &quot;read/wait/send Orca terminal&quot;, &quot;terminal send&quot;, &quot;full handoff&quot;, &quot;handover&quot;, &quot;give this to another agent&quot;, &quot;another worktree&quot;, &quot;Orca browser&quot;, &quot;orca artifacts&quot;, &quot;share HTML/Markdown&quot;, &quot;public artifact link&quot;, &quot;share skills&quot;, or &quot;control the browser inside Orca&quot;. Prefer this over raw `git worktree`, ad hoc PTYs, Playwright, or Computer Use when the task touches Orca-managed state. Use Computer Use for browser windows, webviews, or desktop UI outside Orca&apos;s embedded browser.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\orca-cli\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>orchestration</name>\n    <description>Use Orca orchestration for structured multi-agent coordination: threaded messages, blocking ask/reply flows, task dispatch, worker_done/escalation waits, task DAGs, decision gates, coordinator loops, or decomposing work across agents. Use `orca-cli` instead for full ownership handoffs, including requests phrased as &quot;hand off&quot;, &quot;handoff&quot;, &quot;handover&quot;, &quot;give this to another agent&quot;, or &quot;another worktree&quot; when the user did not explicitly ask to supervise, monitor, wait for results, or coordinate a DAG. Use `orca-cli` for ordinary terminal control, lightweight terminal prompts, shell commands, Orca worktree management, reading or waiting on terminals, and automation of the browser embedded inside Orca. Use Computer Use for browser windows, webviews, Orca app UI, or desktop UI outside Orca&apos;s embedded browser.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\orchestration\\SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>",
+        "cwd": "<cwd>\nE:/GitCode/omnigent/designs/go-rewrite/.pi-rpc-probe\n</cwd>"
+      },
+      "timestamp": 1793611679214,
+      "toolsAdded": [
+        {
+          "name": "read",
+          "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+          "parameters": {
+            "type": "object",
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path to the file to read (relative or absolute)"
+              },
+              "offset": {
+                "type": "number",
+                "description": "Line number to start reading from (1-indexed)"
+              },
+              "limit": {
+                "type": "number",
+                "description": "Maximum number of lines to read"
+              }
+            }
+          },
+          "constrainedSampling": {
+            "type": "json_schema",
+            "strict": "prefer"
+          }
+        },
+        {
+          "name": "bash",
+          "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+          "parameters": {
+            "type": "object",
+            "required": [
+              "command"
+            ],
+            "properties": {
+              "command": {
+                "type": "string",
+                "description": "Shell command to execute"
+              },
+              "timeout": {
+                "type": "number",
+                "description": "Timeout in seconds (optional, no default timeout)"
+              }
+            }
+          },
+          "constrainedSampling": {
+            "type": "json_schema",
+            "strict": "prefer"
+          }
+        },
+        {
+          "name": "edit",
+          "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+          "parameters": {
+            "type": "object",
+            "required": [
+              "path",
+              "edits"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path to the file to edit (relative or absolute)"
+              },
+              "edits": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "oldText",
+                    "newText"
+                  ],
+                  "properties": {
+                    "oldText": {
+                      "type": "string",
+                      "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                    },
+                    "newText": {
+                      "type": "string",
+                      "description": "Replacement text for this targeted edit."
+                    }
+                  }
+                },
+                "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+              }
+            }
+          },
+          "constrainedSampling": {
+            "type": "json_schema",
+            "strict": "prefer"
+          }
+        },
+        {
+          "name": "write",
+          "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+          "parameters": {
+            "type": "object",
+            "required": [
+              "path",
+              "content"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path to the file to write (relative or absolute)"
+              },
+              "content": {
+                "type": "string",
+                "description": "Content to write to the file"
+              }
+            }
+          },
+          "constrainedSampling": {
+            "type": "json_schema",
+            "strict": "prefer"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "type": "message_start",
+    "message": {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Reply with exactly the word PONG."
+        }
+      ],
+      "timestamp": 1793611679212
+    }
+  },
+  {
+    "type": "message_end",
+    "message": {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Reply with exactly the word PONG."
+        }
+      ],
+      "timestamp": 1793611679212
+    }
+  },
+  {
+    "type": "message_start",
+    "message": {
+      "role": "assistant",
+      "content": [],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "deepseek-v4.1-flash",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "pending",
+      "timestamp": 1793611679235
+    }
+  },
+  {
+    "type": "message_update",
+    "usage": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "totalTokens": 0,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 0
+      }
+    },
+    "assistantMessageEvent": {
+      "type": "text_start",
+      "contentIndex": 0
+    }
+  },
+  {
+    "type": "message_update",
+    "usage": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0,
+      "totalTokens": 0,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 0
+      }
+    },
+    "assistantMessageEvent": {
+      "type": "text_delta",
+      "contentIndex": 0,
+      "delta": "PONG"
+    }
+  },
+  {
+    "type": "message_update",
+    "usage": {
+      "input": 5382,
+      "output": 4,
+      "cacheRead": 256,
+      "cacheWrite": 0,
+      "reasoning": 0,
+      "totalTokens": 5642,
+      "cost": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "total": 0
+      }
+    },
+    "assistantMessageEvent": {
+      "type": "text_end",
+      "contentIndex": 0,
+      "content": "PONG"
+    }
+  },
+  {
+    "type": "message_end",
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "PONG",
+          "textSignature": "{\"v\":1,\"id\":\"item_98b760168da80965d2fe3fb2\"}"
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "deepseek-v4.1-flash",
+      "usage": {
+        "input": 5382,
+        "output": 4,
+        "cacheRead": 256,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 5642,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1793611679235,
+      "responseId": "gw-c2a0aa5c2d63-92fb80",
+      "rawStopReason": "completed",
+      "durationMs": 1974,
+      "thinkingLevel": "high"
+    }
+  },
+  {
+    "type": "turn_end",
+    "message": {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "PONG",
+          "textSignature": "{\"v\":1,\"id\":\"item_98b760168da80965d2fe3fb2\"}"
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "deepseek-v4.1-flash",
+      "usage": {
+        "input": 5382,
+        "output": 4,
+        "cacheRead": 256,
+        "cacheWrite": 0,
+        "reasoning": 0,
+        "totalTokens": 5642,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "timestamp": 1793611679235,
+      "responseId": "gw-c2a0aa5c2d63-92fb80",
+      "rawStopReason": "completed",
+      "durationMs": 1974,
+      "thinkingLevel": "high"
+    },
+    "toolResults": []
+  },
+  {
+    "type": "agent_end",
+    "messages": [
+      {
+        "role": "system",
+        "content": "",
+        "sections": {
+          "preamble": "You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.",
+          "tools": "<tools>\n- read: Read file contents\n- bash: Execute bash commands (ls, grep, find, etc.)\n- edit: Make precise file edits with exact text replacement, including multiple disjoint edits in one call\n- write: Create or overwrite files\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.\n</tools>",
+          "rules": "<rules>\n- Use bash for file operations like ls, rg, find\n- Use read to examine files instead of cat or sed.\n- You can inspect PI_* environment variables for current model and session details.\n- Use edit for precise changes (edits[].oldText must match exactly)\n- When changing multiple separate locations in one file, use one edit call with multiple entries in edits[] instead of multiple edit calls\n- Each edits[].oldText is matched against the original file, not after earlier edits are applied. Do not emit overlapping or nested edits. Merge nearby changes into one edit.\n- Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions.\n- Use write only for new files or complete rewrites.\n- Be concise in your responses\n- Show file paths clearly when working with files\n</rules>",
+          "docs": "<docs>\nPi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):\n- Main documentation: C:\\Users\\28591\\.pi\\agent\\install\\releases\\1.4.0\\node_modules\\@earendil-works\\pi-coding-agent\\README.md\n- Additional docs: C:\\Users\\28591\\.pi\\agent\\install\\releases\\1.4.0\\node_modules\\@earendil-works\\pi-coding-agent\\docs\n- Examples: C:\\Users\\28591\\.pi\\agent\\install\\releases\\1.4.0\\node_modules\\@earendil-works\\pi-coding-agent\\examples (extensions, custom tools, SDK)\n- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory\n- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)\n- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing\n- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)\n</docs>",
+          "project_context": "<project_context>\nProject-specific instructions and guidelines:\n\n<project_instructions path=\"E:\\GitCode\\omnigent\\AGENTS.md\">\n# Agent guidance\r\n\r\nGuidance for AI agents (Claude Code, Copilot, Cursor, etc.) working in this\r\nrepository. See `CONTRIBUTING.md` for the full contributor workflow.\r\n\r\n## Reuse and design\r\n\r\n- Search for and reuse existing helpers before adding code. Refactor an existing\r\n  implementation if that avoids duplication.\r\n- Use descriptive names; avoid unexplained abbreviations and single-letter names.\r\n\r\n## Test changes\r\n\r\nBefore adding test setup, read [the test guide](tests/README.md) and\r\n[primitive catalog](tests/_helpers/README.md), then inspect the nearest scenario.\r\nReuse sufficient coverage unchanged or extend a compatible scenario. Keep input\r\nmatrices at the lowest reliable layer; retain E2E for distinct process, transport\r\nor browser boundaries. Reuse primitives with explicit caller inputs and keep\r\nfaults and assertions in the test. Explain new setup or a separate E2E in the\r\nPR's Test Plan (Repro uses `evidence`; Resolve uses `test_audit`). Count helper changes in\r\ntest LOC; fewer lines alone do not establish adequate coverage.\r\n\r\n- Add a unit test for non-trivial functions, methods, and exported APIs. Add\r\n  coverage when changed behavior needs it.\r\n- Run the relevant tests before submitting. Document unrelated pre-existing\r\n  failures in the PR description.\r\n\r\n## Dependency changes\r\n\r\nWhen raising a dependency floor or adding a dependency, keep it installable from\r\npackage mirrors that embargo new releases (see the dependency notes in\r\n`CONTRIBUTING.md`) and run `just check-internal-mirror` when you can reach the\r\nDatabricks PyPI proxy. If a mirror lacks the version you need, keep the floor\r\nbelow it and pin the newer release only in `uv.lock`; do not work around the\r\nmirror with a local or temporary index. Never add the `dependency-floor-approved`\r\nlabel yourself; a human maintainer adds it after checking the mirror.\r\n\r\n## Committing\r\n\r\nThe `pre-commit` hooks are the local gate, and CI runs the same checks. They\r\nrun on `git commit` and again on `git push` only after they are installed:\r\n`just ensure` does that (or `just hooks` on its own), once per clone. Worktrees\r\nshare the clone's `.git`, so one install covers them all.\r\n\r\n- Never pass `--no-verify`. A hook failure is a finding to fix, not a gate to\r\n  skip; the push hook will fail on the same commits anyway.\r\n- Files written through shell heredocs or scripts are unformatted until a hook\r\n  or `just lint` touches them. Before pushing web changes, run\r\n  `cd web && pnpm exec prettier --check .` and read its exit code; do not judge\r\n  hook output by grepping it.\r\n- To check by hand, `just lint` runs the hooks over staged files and\r\n  `just lint-all` over the whole tree. Fix what they report, re-stage, commit.\r\n\r\n## Local development shortcuts\r\n\r\nUse `just` for common tasks; run `just --list` for grouped recipes.\r\n\r\n- `just ensure` \u2014 install/check prerequisites, including the git hooks\r\n- `just run-ios` / `just run-android` \u2014 build/run mobile apps\r\n- `just dev` / `just dev-mobile` \u2014 start the omnigent dev pod\r\n- `just electron-dev` / `just electron-build` \u2014 Electron desktop shell\r\n- `just lint` / `just lint-all` \u2014 run pre-commit; `just hooks` \u2014 install the git hooks\r\n- `just normalize-locks` \u2014 rewrite lockfile registries to PyPI/npmjs.org\r\n\r\n## Pull requests\r\n\r\nWhen you open a pull request, fill in the repo's PR template at\r\n`.github/pull_request_template.md` (case-sensitive on Linux \u2014 note the lowercase\r\nfilename). Keep every section and checkbox row so reviewers can skim them,\r\nexcept the optional Changelog section as described below.\r\n\r\n- **Summary** \u2014 what changed and why.\r\n- **Test Plan** \u2014 how you verified it.\r\n- **Demo** \u2014 a **video or images** showing the change. Expected on contributor\r\n  PRs for UI / frontend changes (check the \"UI / frontend change\" box under\r\n  *Type of change*) so reviewers can see the new behaviour without checking out\r\n  the branch. Use `N/A` for non-visual changes.\r\n- **Type of change** / **Test coverage** \u2014 check all that apply (at least one\r\n  each).\r\n- **Coverage notes** \u2014 required if you checked \"Manual verification completed\"\r\n  or \"Not applicable\".\r\n- **Release notes** \u2014 choose exactly one Yes/No checkbox and keep both rows.\r\n  Choose Yes only for outstanding user-facing features, bug fixes, UX changes,\r\n  and breaking changes. Breaking changes must choose Yes. Features behind a\r\n  feature flag are eligible only once the flag is enabled for users. Choose No\r\n  for small fixes or improvements, features behind disabled flags, and internal\r\n  changes with no user impact. This is the author's recommendation for\r\n  maintainers curating the release notes.\r\n- **Changelog** \u2014 if Release notes is Yes, write one line describing the change\r\n  for users, including compatibility impact for breaking changes. If No, delete\r\n  this section; the complete changelog still credits the PR using its title.\r\n\r\nGenerate the description from the actual diff and this session's context \u2014 lead\r\nwith the motivation, then the change. Don't pass a `--body` that skips these\r\nsections.\r\n\r\n### Demo media\r\n\r\nDo not commit screenshots or recordings created only as PR or issue evidence.\r\nUpload them as GitHub attachments and embed the attachment URLs in the PR's\r\nDemo section or issue comments. Keep local captures outside the tracked tree,\r\nand redact private data before uploading.\r\n\r\nCommit media only when it serves maintained documentation, product assets, or\r\ntest baselines, not merely to obtain a public demo URL. If attachment upload is\r\nunavailable, explain the limitation and ask for help instead of committing the\r\nfiles as a workaround.\r\n\r\n## Finishing a task\r\n\r\nWhen you finish a task, print instructions to the user on how to test it: the\r\ncommands to run, the inputs to provide, or the steps to reproduce so they can\r\nverify the result themselves. Prefer verification that is best performed by a\r\nhuman, such as concrete manual behavior checks, rather than only listing unit\r\ntest commands. Don't leave the user guessing how to confirm the work \u2014 tell\r\nthem exactly what to do.\r\n\r\nTo drive the app yourself and prove a user-facing change on every entry point a\r\nuser can reach, start with `feature-map/README.md`, then read the relevant maps and linked skills.\r\n\r\n## Deprecating features\r\n\r\nWhen deprecating a feature, note the version in which it is expected to be\r\nremoved so we can clean it up when that version ships. Call out the deprecation\r\nversion in code (e.g. a `@deprecated` tag or comment naming the target release)\r\nand in the PR/commit description, so there's a clear marker to act on later.\r\n\r\n## Code comments\r\n\r\nKeep comments short and focused on the code, not on the change history.\r\n\r\n- **Keep them brief** \u2014 prefer one or two lines. Avoid comments longer than\r\n  three lines; if you need more, the code likely needs refactoring or a doc\r\n  string, not a wall of inline commentary.\r\n- **Describe the scenario, not the PR** \u2014 explain *what* the code handles or\r\n  *why* it exists, in terms a future reader needs. Don't reference PR numbers,\r\n  issue numbers, or ticket IDs (e.g. `#1646`, `fixes JIRA-123`); the scenario\r\n  should be clear without chasing external links.\r\n\r\n## Database query names\r\n\r\nApplication stores use `make_named_managed_session_maker` and give every\r\nsession a stable semantic operation name. The session-level name must describe\r\nthe caller's intent rather than repeat SQL syntax; use a nested\r\n`query_name_scope` only when one transaction needs distinct names for important\r\nsubqueries. Because the named session covers implicit flush and commit, don't\r\nadd an explicit `flush()` only to make a query name observable.\r\n\r\n## Framework-owned instructions\r\n\r\nKeep runtime lifecycle and metadata instructions separate from portable agent\r\ninstructions:\r\n\r\n- Agent-spec and per-request instructions are user-authored. Framework-owned\r\n  instructions are additive runtime behavior and are appended after them in\r\n  `omnigent/runtime/prompt.py`.\r\n- Keep the canonical instruction text and lifecycle gate in the owning framework\r\n  module. Harness adapters should only transport the composed instructions; do\r\n  not duplicate policy across adapters or add lifecycle metadata to `AgentSpec`.\r\n- If framework instructions grow beyond a small ordered list, introduce a\r\n  structured `FrameworkInstructions` value at the prompt-composition boundary.\r\n\n</project_instructions>\n</project_context>",
+          "skills": "<skills>\nThe following skills provide specialized instructions for specific tasks.\nUse the read tool to load a skill's file when the task matches its description.\nWhen a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.\n\n<available_skills>\n  <skill>\n    <name>archify</name>\n    <description>Create polished, validated architecture, workflow, sequence, data-flow, and lifecycle/state diagrams as explorable standalone HTML with inline SVG, dark/light themes, optional trace motion, and PNG/JPEG/WebP/SVG/WebM export. Accept plain-language requirements or pasted Mermaid flowchart, sequenceDiagram, and stateDiagram input; inspect repository evidence when the diagram must reflect real code. Use when the user asks to visualize system architecture, infrastructure, cloud/security/network topology, technical workflows, API call sequences, request lifecycles, data pipelines, ETL/ELT, data lineage, state machines, or to convert/beautify Mermaid.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\archify\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>artifact-graph-builder</name>\n    <description>Build a reusable file-level relationship graph dataset for an installed closed-source software package from its program directory and optional reverse-engineering evidence directory. Use when the user asks to enumerate an installation tree, extract executable metadata/imports/exports/strings/sections/signatures, classify source status, infer file relationships, assess products and modules, record analysis failures, or produce standardized graph JSON plus an offline viewer.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\artifact-graph-builder\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>computer-use</name>\n    <description>Use Orca&apos;s computer-use CLI to inspect and operate local desktop app windows through accessibility trees, screenshots, and safe UI actions. Use for desktop app interaction: list apps/windows, get app state, read visible UI, click controls, type, press keys, scroll, drag, set values, or perform accessibility actions. Also use for browser windows, webviews, Orca app UI, or other desktop UI. Triggers include &quot;computer use&quot;, &quot;orca computer&quot;, &quot;read Spotify&quot;, &quot;read Slack&quot;, &quot;control/click/read in a desktop app&quot;, and &quot;get app state&quot;.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\computer-use\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>domain-modeling</name>\n    <description>Build and sharpen a project&apos;s domain model. Use when discussing codebase terminology, writing or editing a GLOSSARY.md, or recording or editing an ADR.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\domain-modeling\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>grill-me</name>\n    <description>A relentless interview to sharpen a plan or design.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\grill-me\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>grill-with-docs</name>\n    <description>A relentless interview to sharpen a plan or design, which also creates docs (ADR&apos;s and glossary) as we go.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\grill-with-docs\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>grilling</name>\n    <description>Grill the user relentlessly about a plan or design. Use when the user wants to stress-test a plan before building, or uses any &apos;grill&apos; trigger phrases.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\grilling\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>manual-trigger-bridge</name>\n    <description>Bridge manual GUI-only parsing to programmatic triggering via reverse engineering.\nUse when a PoC file (zip/rar/image/document) can only be triggered by human manual\nactions (right-click extract, drag-drop, open-with, upload) and there is no CLI/command\nthat reproduces the same internal code path. This skill builds a no-GUI harness that\nwalks the same internal dispatch as manual clicking.\nApplies to archive parsers (360Zip, WinRAR), image parsers, document parsers, media parsers\non Windows where GUI filtering and DLL parsing are split.\n</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\manual-trigger-bridge\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>md2html</name>\n    <description>Convert long-form Markdown (plan, spec, system design, RFC, runbook, postmortem, brainstorm, notes) into a single self-contained HTML page with Mermaid diagrams, step timelines, callouts, sidebar TOC. Claude-orange light+dark theme. Multi-language. Portable across Claude Code / Codex / Antigravity / any AI agent.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\md2html\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>officecli</name>\n    <description>Create, analyze, proofread, and modify Office documents (.docx, .xlsx, .pptx) using the officecli CLI tool. Use when the user wants to create, inspect, check formatting, find issues, add charts, or modify Office documents.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\officecli\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>orca-cli</name>\n    <description>Use the public `orca` CLI to operate Orca-managed worktrees, folder contexts, terminals, repos, automations, artifacts, skill sharing, worktree comments, and the browser embedded inside the Orca app. Use when the user says &quot;$orca-cli&quot;, &quot;use orca cli&quot;, &quot;Orca worktree&quot;, &quot;child worktree&quot;, &quot;cardStatus&quot;, &quot;spawn codex/claude in a worktree&quot;, &quot;read/wait/send Orca terminal&quot;, &quot;terminal send&quot;, &quot;full handoff&quot;, &quot;handover&quot;, &quot;give this to another agent&quot;, &quot;another worktree&quot;, &quot;Orca browser&quot;, &quot;orca artifacts&quot;, &quot;share HTML/Markdown&quot;, &quot;public artifact link&quot;, &quot;share skills&quot;, or &quot;control the browser inside Orca&quot;. Prefer this over raw `git worktree`, ad hoc PTYs, Playwright, or Computer Use when the task touches Orca-managed state. Use Computer Use for browser windows, webviews, or desktop UI outside Orca&apos;s embedded browser.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\orca-cli\\SKILL.md</location>\n  </skill>\n  <skill>\n    <name>orchestration</name>\n    <description>Use Orca orchestration for structured multi-agent coordination: threaded messages, blocking ask/reply flows, task dispatch, worker_done/escalation waits, task DAGs, decision gates, coordinator loops, or decomposing work across agents. Use `orca-cli` instead for full ownership handoffs, including requests phrased as &quot;hand off&quot;, &quot;handoff&quot;, &quot;handover&quot;, &quot;give this to another agent&quot;, or &quot;another worktree&quot; when the user did not explicitly ask to supervise, monitor, wait for results, or coordinate a DAG. Use `orca-cli` for ordinary terminal control, lightweight terminal prompts, shell commands, Orca worktree management, reading or waiting on terminals, and automation of the browser embedded inside Orca. Use Computer Use for browser windows, webviews, Orca app UI, or desktop UI outside Orca&apos;s embedded browser.</description>\n    <location>C:\\Users\\28591\\.agents\\skills\\orchestration\\SKILL.md</location>\n  </skill>\n</available_skills>\n</skills>",
+          "cwd": "<cwd>\nE:/GitCode/omnigent/designs/go-rewrite/.pi-rpc-probe\n</cwd>"
+        },
+        "timestamp": 1793611679214,
+        "toolsAdded": [
+          {
+            "name": "read",
+            "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to read (relative or absolute)"
+                },
+                "offset": {
+                  "type": "number",
+                  "description": "Line number to start reading from (1-indexed)"
+                },
+                "limit": {
+                  "type": "number",
+                  "description": "Maximum number of lines to read"
+                }
+              }
+            },
+            "constrainedSampling": {
+              "type": "json_schema",
+              "strict": "prefer"
+            }
+          },
+          {
+            "name": "bash",
+            "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "command"
+              ],
+              "properties": {
+                "command": {
+                  "type": "string",
+                  "description": "Shell command to execute"
+                },
+                "timeout": {
+                  "type": "number",
+                  "description": "Timeout in seconds (optional, no default timeout)"
+                }
+              }
+            },
+            "constrainedSampling": {
+              "type": "json_schema",
+              "strict": "prefer"
+            }
+          },
+          {
+            "name": "edit",
+            "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path",
+                "edits"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to edit (relative or absolute)"
+                },
+                "edits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "oldText",
+                      "newText"
+                    ],
+                    "properties": {
+                      "oldText": {
+                        "type": "string",
+                        "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                      },
+                      "newText": {
+                        "type": "string",
+                        "description": "Replacement text for this targeted edit."
+                      }
+                    }
+                  },
+                  "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+                }
+              }
+            },
+            "constrainedSampling": {
+              "type": "json_schema",
+              "strict": "prefer"
+            }
+          },
+          {
+            "name": "write",
+            "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+            "parameters": {
+              "type": "object",
+              "required": [
+                "path",
+                "content"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "Path to the file to write (relative or absolute)"
+                },
+                "content": {
+                  "type": "string",
+                  "description": "Content to write to the file"
+                }
+              }
+            },
+            "constrainedSampling": {
+              "type": "json_schema",
+              "strict": "prefer"
+            }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Reply with exactly the word PONG."
+          }
+        ],
+        "timestamp": 1793611679212
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "PONG",
+            "textSignature": "{\"v\":1,\"id\":\"item_98b760168da80965d2fe3fb2\"}"
+          }
+        ],
+        "api": "openai-responses",
+        "provider": "openai",
+        "model": "deepseek-v4.1-flash",
+        "usage": {
+          "input": 5382,
+          "output": 4,
+          "cacheRead": 256,
+          "cacheWrite": 0,
+          "reasoning": 0,
+          "totalTokens": 5642,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "timestamp": 1793611679235,
+        "responseId": "gw-c2a0aa5c2d63-92fb80",
+        "rawStopReason": "completed",
+        "durationMs": 1974,
+        "thinkingLevel": "high"
+      }
+    ],
+    "willRetry": false
+  },
+  {
+    "type": "agent_settled",
+    "aborted": false
+  }
+]

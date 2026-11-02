@@ -114,3 +114,6 @@ designs/go-rewrite/evidence/baseline/pi-agent-dir/
 go/testdata/*.db-shm
 go/testdata/*.db-wal
 go/.omnigent-go.exe
+go/.omnigent-go.exe~
+go/.last-run.log
+go/.pi-rpc-probe/
