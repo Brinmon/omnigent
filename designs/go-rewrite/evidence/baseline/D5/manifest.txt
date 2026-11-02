@@ -1,0 +1,11 @@
+id: D5
+description: workspace file search
+result: FAIL
+exit_code: 1
+duration_s: 222
+mode: ui
+browser_channel: msedge
+commit: 6d209c0
+python: Python 3.12.13
+targets: tests/e2e_ui/files/test_file_search.py
+tail: FAILED tests/e2e_ui/files/test_file_search.py::test_search_matches_and_reveals_a_directory[chromium] ERROR tests/e2e_ui/files/test_file_search.py::test_search_says_when_it_stopped_early[chromium] 2 failed, 1 error, 6 rerun in 217.24s (0:03:37) 
