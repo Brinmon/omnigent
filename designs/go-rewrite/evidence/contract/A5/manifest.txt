@@ -1,10 +1,10 @@
 id: A5
 description: Go reads a Python-written database
 command: bash -c cd '/e/GitCode/omnigent/go' && go test ./internal/db/ -run 'TestReferenceDBIsReadable|TestUuid16RoundTrip' -v
-commit: f4f97bbea
+commit: af4b6aecd
 go: go1.26.1
 python: 3.12.13
-duration_s: 2
+duration_s: 1
 result: PASS
 tail:
 === RUN   TestReferenceDBIsReadable
@@ -12,4 +12,4 @@ tail:
 === RUN   TestUuid16RoundTrip
 --- PASS: TestUuid16RoundTrip (0.00s)
 PASS
-ok  	github.com/Brinmon/omnigent/go/internal/db	0.270s
+ok  	github.com/Brinmon/omnigent/go/internal/db	0.249s

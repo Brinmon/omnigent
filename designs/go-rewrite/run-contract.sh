@@ -121,9 +121,22 @@ if want A1 || want A2 || want A3; then
   fi
 fi
 
+# A4 depends on the generated union being current, so check the generation
+# before the tests that read it.
+if want A4; then
+  run A4-gen "oapi-codegen output matches openapi.json"     bash designs/go-rewrite/check-generated.sh
+fi
+
 if want A4; then
   run A4 "ServerStreamEvent 56 variants match spec" \
     bash -c "cd '$GO_DIR' && go test ./internal/event/ -v"
+fi
+
+# P1 acceptance: both builds answer the same JSON for the endpoints P1
+# implements, reading one Python-written database. This is stronger than a
+# golden comparison because it runs both servers now.
+if want A7; then
+  run A7 "Go and Python serve identical JSON (P1 endpoints)"     bash -c "cd '$REPO_ROOT' && .venv/Scripts/python.exe designs/go-rewrite/compare-servers.py"
 fi
 
 if want A5; then

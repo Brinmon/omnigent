@@ -81,8 +81,9 @@ func TestReferenceDBIsReadable(t *testing.T) {
 
 	cases := map[string]int{
 		"agents":             2,
-		"conversations":      3,
-		"conversation_items": 18,
+		"conversations":      4,
+		"conversation_items": 15,
+		"comments":           4,
 	}
 	for table, want := range cases {
 		var got int
@@ -149,8 +150,8 @@ func TestUuid16RoundTrip(t *testing.T) {
 	if err := rows.Err(); err != nil {
 		t.Fatalf("iterate conversations: %v", err)
 	}
-	if seen != 3 {
-		t.Fatalf("scanned %d conversations, want 3", seen)
+	if seen != 4 {
+		t.Fatalf("scanned %d conversations, want 4", seen)
 	}
 
 	// The generator's ids must survive the round trip: this is what lets the
@@ -179,7 +180,7 @@ func TestCompressedTextFrames(t *testing.T) {
 
 	var sawZstd, sawRaw bool
 	for rows.Next() {
-		var kind int16
+		var kind int64
 		var raw any
 		if err := rows.Scan(&kind, &raw); err != nil {
 			t.Fatalf("scan agent: %v", err)
@@ -207,10 +208,10 @@ func TestCompressedTextFrames(t *testing.T) {
 		if text == "" {
 			t.Errorf("kind %d: decoded to empty text", kind)
 		}
-		if kind == int16(db.AgentKind["user"]) && text != "short" {
+		if kind == db.AgentKind["user"] && text != "short" {
 			t.Errorf("kind %d: got %q, want %q", kind, text, "short")
 		}
-		if kind == int16(db.AgentKind["server"]) && !strings.Contains(text, "\"messages\"") {
+		if kind == db.AgentKind["server"] && !strings.Contains(text, "\"note\"") {
 			t.Errorf("kind %d: decoded text is not the JSON the generator wrote: %q",
 				kind, text[:min(60, len(text))])
 		}
@@ -227,32 +228,79 @@ func TestCompressedTextFrames(t *testing.T) {
 }
 
 // TestCompressedTextLegacyPassThrough covers the rows a pre-migration database
-// still holds: unframed plaintext as TEXT and as BLOB must come back verbatim.
+// still holds: unframed plaintext as TEXT and as BLOB must come back verbatim,
+// alongside the framed variants. The fixture stores all four on comments.body,
+// which is a real CompressedText column -- putting them on a plain JSON column
+// would exercise the decoder with data the app never writes.
 func TestCompressedTextLegacyPassThrough(t *testing.T) {
 	conn := openReference(t)
 
-	cases := []struct {
-		responseID string
-		want       string
-	}{
-		{"resp-legacy", `{"legacy": true, "reason": "written before compression"}`},
-		{"resp-legacy-blob", `{"legacy": "blob"}`},
-		{"resp-rawframe", "tiny payload"},
+	rows, err := conn.Query("SELECT id, body FROM comments ORDER BY id")
+	if err != nil {
+		t.Fatalf("query comments: %v", err)
 	}
-	for _, tc := range cases {
+	defer rows.Close()
+
+	var sawFramedZstd, sawFramedRaw, sawLegacyText, sawLegacyBlob bool
+	seen := 0
+	for rows.Next() {
+		var id string
 		var raw any
-		err := conn.QueryRow(
-			"SELECT data FROM conversation_items WHERE response_id = ?", tc.responseID,
-		).Scan(&raw)
-		if err != nil {
-			t.Fatalf("%s: query: %v", tc.responseID, err)
+		if err := rows.Scan(&id, &raw); err != nil {
+			t.Fatalf("scan comment: %v", err)
 		}
-		got, err := db.DecodeCompressedText(raw)
+		text, err := db.DecodeCompressedText(raw)
 		if err != nil {
-			t.Fatalf("%s: decode %T: %v", tc.responseID, raw, err)
+			t.Fatalf("comment %s: decode %T: %v", id, raw, err)
 		}
-		if got != tc.want {
-			t.Errorf("%s: got %q, want %q", tc.responseID, got, tc.want)
+		if text == "" {
+			t.Errorf("comment %s decoded to empty text", id)
+		}
+
+		switch value := raw.(type) {
+		case string:
+			sawLegacyText = true
+			if text != value {
+				t.Errorf("comment %s: legacy TEXT changed: %q -> %q", id, value, text)
+			}
+		case []byte:
+			if len(value) == 0 {
+				t.Errorf("comment %s: empty blob", id)
+				continue
+			}
+			if value[0] != 0x00 {
+				sawLegacyBlob = true
+				if text != string(value) {
+					t.Errorf("comment %s: legacy BLOB changed: %q -> %q", id, value, text)
+				}
+				break
+			}
+			switch value[1] {
+			case 0x01:
+				sawFramedZstd = true
+			case 0x00:
+				sawFramedRaw = true
+			}
+		default:
+			t.Fatalf("comment %s arrived as %T", id, raw)
+		}
+		seen++
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("iterate comments: %v", err)
+	}
+
+	if seen != 4 {
+		t.Fatalf("scanned %d comments, want 4 (one per storage variant)", seen)
+	}
+	for name, ok := range map[string]bool{
+		"framed zstd": sawFramedZstd,
+		"framed raw":  sawFramedRaw,
+		"legacy TEXT": sawLegacyText,
+		"legacy BLOB": sawLegacyBlob,
+	} {
+		if !ok {
+			t.Errorf("fixture is missing the %s variant", name)
 		}
 	}
 }
@@ -265,12 +313,12 @@ func TestEnumCodesMatchDump(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read %s: %v", enumDump, err)
 	}
-	var dump map[string]map[string]int16
+	var dump map[string]map[string]int64
 	if err := json.Unmarshal(raw, &dump); err != nil {
 		t.Fatalf("parse %s: %v", enumDump, err)
 	}
 
-	goTables := map[string]map[string]int16{
+	goTables := map[string]map[string]int64{
 		"conversation_kind":               db.ConversationKind,
 		"item_type":                       db.ItemType,
 		"item_status":                     db.ItemStatus,
@@ -327,7 +375,7 @@ func TestStoredEnumCodesDecode(t *testing.T) {
 
 	seen := map[string]bool{}
 	for rows.Next() {
-		var code int16
+		var code int64
 		if err := rows.Scan(&code); err != nil {
 			t.Fatalf("scan type: %v", err)
 		}

@@ -1,0 +1,11 @@
+# Server interface generation. This is the piece that turns the contract into
+# a compile error: every operation in openapi.json becomes a method the Go
+# server must implement, so a missing route stops `go build`.
+package: api
+
+output: server.gen.go
+generate:
+  chi-server: true
+  embedded-spec: false
+output-options:
+  skip-prune: false

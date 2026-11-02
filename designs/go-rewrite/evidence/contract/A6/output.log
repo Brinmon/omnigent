@@ -7,4 +7,4 @@
 === RUN   TestStoredEnumCodesDecode
 --- PASS: TestStoredEnumCodesDecode (0.00s)
 PASS
-ok  	github.com/Brinmon/omnigent/go/internal/db	0.237s
+ok  	github.com/Brinmon/omnigent/go/internal/db	0.297s

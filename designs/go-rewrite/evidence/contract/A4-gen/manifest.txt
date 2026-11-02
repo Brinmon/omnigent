@@ -1,0 +1,11 @@
+id: A4-gen
+description: oapi-codegen output matches openapi.json
+command: bash designs/go-rewrite/check-generated.sh
+commit: af4b6aecd
+go: go1.26.1
+python: 3.12.13
+duration_s: 1
+result: PASS
+tail:
+OK: types.gen.go matches openapi.json
+OK: server.gen.go matches openapi.json

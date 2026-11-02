@@ -89,7 +89,7 @@ def main() -> int:
         lines = [
             "",
             f"// {go_name} codes for {column}.",
-            f"var {go_name} = map[string]int16{{",
+            f"var {go_name} = map[string]int64{{",
         ]
         width = max(len(_go_string(name)) for name, _ in ordered) + 1  # +1 for the colon
         for name, code in ordered:
@@ -99,7 +99,7 @@ def main() -> int:
         inv = [
             "",
             f"// {go_name}Name maps a stored code back to its name for {column}.",
-            f"var {go_name}Name = map[int16]string{{",
+            f"var {go_name}Name = map[int64]string{{",
         ]
         iw = max(len(str(code)) for _, code in ordered) + 1  # +1 for the colon
         for name, code in ordered:
@@ -123,7 +123,7 @@ def _encode_helpers(keys: list[str]) -> str:
         "//",
         "// An unknown name is an error rather than a zero code so a caller cannot",
         "// persist a value the reader will not understand.",
-        "func EncodeName(table map[string]int16, field, name string) (int16, error) {",
+        "func EncodeName(table map[string]int64, field, name string) (int64, error) {",
         "\tcode, ok := table[name]",
         "\tif !ok {",
         '\t\treturn 0, &UnknownEnumValueError{Field: field, Name: name}',
@@ -132,7 +132,7 @@ def _encode_helpers(keys: list[str]) -> str:
         "}",
         "",
         "// DecodeName maps a stored code back to its enum name.",
-        "func DecodeName(inverse map[int16]string, field string, code int16) (string, error) {",
+        "func DecodeName(inverse map[int64]string, field string, code int64) (string, error) {",
         "\tname, ok := inverse[code]",
         "\tif !ok {",
         '\t\treturn "", &UnknownEnumCodeError{Field: field, Code: code}',
@@ -153,7 +153,7 @@ def _encode_helpers(keys: list[str]) -> str:
         "// UnknownEnumCodeError reports a stored code with no known name.",
         "type UnknownEnumCodeError struct {",
         "\tField string",
-        "\tCode  int16",
+        "\tCode  int64",
         "}",
         "",
         "func (e *UnknownEnumCodeError) Error() string {",

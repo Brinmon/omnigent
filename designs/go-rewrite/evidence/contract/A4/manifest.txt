@@ -1,10 +1,10 @@
 id: A4
 description: ServerStreamEvent 56 variants match spec
 command: bash -c cd '/e/GitCode/omnigent/go' && go test ./internal/event/ -v
-commit: f4f97bbea
+commit: af4b6aecd
 go: go1.26.1
 python: 3.12.13
-duration_s: 1
+duration_s: 0
 result: PASS
 tail:
 === RUN   TestStreamEventTypesMatchSpec

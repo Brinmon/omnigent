@@ -1,0 +1,90 @@
+{
+  "compaction": {
+    "compacted_messages": null,
+    "last_item_id": "item-fixture",
+    "model": null,
+    "summary": "Fixture compaction summary.",
+    "token_count": 1234,
+    "window_id": null
+  },
+  "error": {
+    "cause": null,
+    "code": "fixture_error",
+    "level": null,
+    "message": "Fixture error payload.",
+    "remediation": null,
+    "source": "llm",
+    "title": null
+  },
+  "function_call": {
+    "arguments": "{\"path\": \"alpha_one.py\"}",
+    "call_id": "call-fixture-1",
+    "model": "pi",
+    "name": "read"
+  },
+  "function_call_output": {
+    "call_id": "call-fixture-1",
+    "output": "contents of alpha_one.py"
+  },
+  "message": {
+    "content": [
+      {
+        "text": "Fixture message.",
+        "type": "output_text"
+      }
+    ],
+    "model": "pi",
+    "role": "assistant",
+    "stream_message_id": null
+  },
+  "native_tool": {
+    "item": {
+      "id": "tool-fixture",
+      "status": "completed",
+      "type": "web_search"
+    }
+  },
+  "reasoning": {
+    "content": null,
+    "encrypted_content": null,
+    "model": "pi",
+    "summary": [
+      {
+        "text": "Fixture reasoning summary.",
+        "type": "summary_text"
+      }
+    ]
+  },
+  "resource_event": {
+    "event_type": "created",
+    "resource": null,
+    "resource_id": "resource-fixture",
+    "resource_type": "terminal"
+  },
+  "routing_decision": {
+    "agent": null,
+    "applied": true,
+    "attempted_override": null,
+    "decision_id": null,
+    "harness": null,
+    "model": "deepseek-v4.1-flash",
+    "rationale": "Fixture routing decision.",
+    "raw_model": null,
+    "router_source": null,
+    "scope": "turn",
+    "task_description": null
+  },
+  "slash_command": {
+    "arguments": "{}",
+    "kind": "skill",
+    "model": "pi",
+    "name": "model",
+    "output": null
+  },
+  "terminal_command": {
+    "input": null,
+    "kind": "input",
+    "stderr": null,
+    "stdout": null
+  }
+}

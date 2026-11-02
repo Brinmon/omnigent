@@ -1,0 +1,13 @@
+python: http://127.0.0.1:54778
+go:     http://127.0.0.1:54779
+database: C:\Users\28591\AppData\Local\Temp\server-compare-oeh9dim0\compare.db
+
+path                         result   detail
+------------------------------------------------------------------------------
+/v1/info                     OK       (4 field(s) excluded by design)
+/v1/me                       OK       
+/v1/harnesses                OK       (2 field(s) excluded by design)
+/v1/sessions                 OK       
+/v1/sessions/<id>            OK       detail read
+
+OK: every P1 endpoint agrees between the Go and Python builds

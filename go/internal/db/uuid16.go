@@ -5,6 +5,7 @@
 package db
 
 import (
+	"database/sql/driver"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -120,4 +121,39 @@ func fromBytes(raw []byte) (Uuid16, error) {
 		}
 	}
 	return out, fmt.Errorf("invalid uuid bytes: want %d, got %d", UUID16Len, len(raw))
+}
+
+// Scan implements sql.Scanner so a Uuid16 column can be read directly.
+//
+// Drivers hand these columns back as []byte, string, or nil; ScanBlob accepts
+// all three shapes, so this only adapts the interface.
+//
+// A NULL column scans as the zero value, matching how Value binds it. The
+// nullable id columns (parent_conversation_id, agent_id) use zero to mean
+// "absent", so a column type that cannot hold nil would fail on the first row
+// of any normal session list.
+func (u *Uuid16) Scan(src any) error {
+	if src == nil {
+		*u = Uuid16{}
+		return nil
+	}
+	parsed, err := ScanBlob(src)
+	if err != nil {
+		return err
+	}
+	*u = parsed
+	return nil
+}
+
+// Value implements driver.Valuer so a Uuid16 binds as the 16 raw bytes the
+// column stores, matching what the Python side writes.
+//
+// A zero value binds as NULL: the nullable id columns (parent_conversation_id,
+// agent_id) use zero to mean "absent", and writing 16 NUL bytes instead would
+// create a row no lookup matches.
+func (u Uuid16) Value() (driver.Value, error) {
+	if u.IsZero() {
+		return nil, nil
+	}
+	return u[:], nil
 }

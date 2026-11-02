@@ -8,4 +8,4 @@
     main_test.go:181: mutated enum on schema ElicitationRequestParams.mode
 --- PASS: TestMissingEnumValueFails (0.02s)
 PASS
-ok  	github.com/Brinmon/omnigent/go/cmd/openapi-diff	0.389s
+ok  	github.com/Brinmon/omnigent/go/cmd/openapi-diff	(cached)

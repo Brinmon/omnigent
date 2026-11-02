@@ -40,9 +40,12 @@ import tempfile
 import uuid
 from pathlib import Path
 
+_DESIGN_DIR = Path(__file__).resolve().parent
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
+if str(_DESIGN_DIR) not in sys.path:
+    sys.path.insert(0, str(_DESIGN_DIR))
 
 _DEFAULT_OUT = _REPO_ROOT / "go" / "testdata" / "reference.db"
 
@@ -56,7 +59,11 @@ SEED = {
     "main": _stable_uuid("conversation/main"),
     "child": _stable_uuid("conversation/child"),
     "fork": _stable_uuid("conversation/fork"),
-    "agent": _stable_uuid("agent/hello"),
+    "archived": _stable_uuid("conversation/archived"),
+    # Must match a row written below: a session whose agent_id points at a
+    # missing agent loses its agent name in the detail response, which is
+    # exactly the kind of dangling reference this fixture should not contain.
+    "agent": _stable_uuid("agent/server"),
 }
 ITEM_IDS = {f"item/{i}": _stable_uuid(f"item/{i}") for i in range(1, 13)}
 
@@ -99,11 +106,12 @@ def main(argv: list[str] | None = None) -> int:
     engine = get_or_create_engine(uri)
 
     now = 1_760_000_000
-    long_json = json.dumps(
-        {"messages": [{"role": "user", "content": "x" * 400}], "note": "zstd frame"},
-        separators=(",", ":"),
-    )
-    assert len(long_json.encode()) > 64, "must exceed the raw-codec threshold"
+    # One valid payload per item type, built from the app's own models. A
+    # single shared blob made every non-message item invalid, which the Python
+    # reader rejected with a validation error rather than a decode error.
+    from item_payloads import build_item_payloads
+
+    item_payloads = build_item_payloads()
 
     with Session(engine) as session:
         # ── agents: one per kind, one with a description (CompressedText) ──
@@ -117,7 +125,11 @@ def main(argv: list[str] | None = None) -> int:
                     bundle_location="bundles/hello.tar.gz",
                     version=1,
                     kind=AGENT_KIND[kind],
-                    description=long_json if kind == "server" else "short",
+                    description=(
+                        json.dumps({"note": "zstd frame", "pad": "x" * 400})
+                        if kind == "server"
+                        else "short"
+                    ),
                     updated_at=now,
                     created_by=None if kind == "server" else "fixture-user",
                 )
@@ -150,6 +162,16 @@ def main(argv: list[str] | None = None) -> int:
             ),
             m.SqlConversation(
                 workspace_id=0,
+                id=SEED["archived"],
+                created_at=now - 100,
+                updated_at=now - 100,
+                title="Archived top-level",
+                root_conversation_id=SEED["archived"],
+                next_position=0,
+                archived=True,
+            ),
+            m.SqlConversation(
+                workspace_id=0,
                 id=SEED["fork"],
                 created_at=now + 2,
                 updated_at=now + 2,
@@ -177,7 +199,7 @@ def main(argv: list[str] | None = None) -> int:
                     status=ITEM_STATUS[status],
                     position=position,
                     type=ITEM_TYPE[item_type],
-                    data=long_json if index % 2 == 0 else "{}",
+                    data=json.dumps(item_payloads[item_type], separators=(",", ":")),
                     search_text=f"{item_type} {status}",
                     created_by="fixture-user",
                 )
@@ -195,7 +217,7 @@ def main(argv: list[str] | None = None) -> int:
                     status=ITEM_STATUS[status],
                     position=offset,
                     type=ITEM_TYPE[item_type],
-                    data="{}",
+                    data=json.dumps(item_payloads[item_type], separators=(",", ":")),
                     search_text=status,
                     created_by=None,
                 )
@@ -230,46 +252,56 @@ def main(argv: list[str] | None = None) -> int:
         raw_short = b"\x00\x00" + "tiny payload".encode()
         assert raw_short == compress_encode("tiny payload")
 
-        # C) legacy unframed plaintext stored as TEXT (pre-migration rows)
+        # C-E) CompressedText legacy and raw-frame variants belong on a column
+        # that actually uses the encoding. ``conversation_items.data`` is plain
+        # JSON TEXT, so putting bytes there makes the Python reader fail its
+        # encoding detection -- the fixture must describe real storage, not just
+        # exercise the decoder. ``comments.body`` is a real CompressedText
+        # column, and the comment rows below drive those variants.
         legacy_text = '{"legacy": true, "reason": "written before compression"}'
-
-        # D) legacy unframed plaintext stored as BLOB
         legacy_blob = b'{"legacy": "blob"}'
 
-        conn.execute(
-            "INSERT INTO conversation_items "
-            "(workspace_id, conversation_id, id, response_id, created_at, status,"
-            " position, type, data, search_text, created_by) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (
-                0, bytes.fromhex(SEED["main"]), bytes.fromhex(_stable_uuid("item/legacy")),
-                "resp-legacy", now + 500, ITEM_STATUS["completed"], 500,
-                ITEM_TYPE["message"], legacy_text, "legacy", None,
-            ),
-        )
-        conn.execute(
-            "INSERT INTO conversation_items "
-            "(workspace_id, conversation_id, id, response_id, created_at, status,"
-            " position, type, data, search_text, created_by) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (
-                0, bytes.fromhex(SEED["main"]), bytes.fromhex(_stable_uuid("item/legacy-blob")),
-                "resp-legacy-blob", now + 501, ITEM_STATUS["completed"], 501,
-                ITEM_TYPE["message"], legacy_blob, "legacy-blob", None,
-            ),
-        )
-        # E) a raw-codec framed row, written as bytes like production would
-        conn.execute(
-            "INSERT INTO conversation_items "
-            "(workspace_id, conversation_id, id, response_id, created_at, status,"
-            " position, type, data, search_text, created_by) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (
-                0, bytes.fromhex(SEED["main"]), bytes.fromhex(_stable_uuid("item/rawframe")),
-                "resp-rawframe", now + 502, ITEM_STATUS["completed"], 502,
-                ITEM_TYPE["reasoning"], raw_short, "rawframe", None,
-            ),
-        )
+        comment_rows = [
+            # (id suffix, body bytes, status)
+            # A framed zstd body: written through compress_encode, so this is
+            # exactly what production stores for a long comment.
+            ("zstd", compress_encode("x" * 200), COMMENT_STATUS["draft"]),
+            # A framed raw body: below the compression threshold.
+            ("raw", raw_short, COMMENT_STATUS["addressed"]),
+            # Legacy unframed plaintext stored as TEXT (pre-migration rows).
+            ("legacy-text", legacy_text, COMMENT_STATUS["draft"]),
+            # Legacy unframed plaintext stored as BLOB.
+            ("legacy-blob", legacy_blob, COMMENT_STATUS["addressed"]),
+        ]
+        for suffix, body, status in comment_rows:
+            conn.execute(
+                "INSERT INTO comments "
+                "(workspace_id, id, conversation_id, path, body, anchor_content,"
+                " start_index, end_index, created_at, updated_at, created_by, status)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                (
+                    0, _stable_uuid(f"comment/{suffix}"), bytes.fromhex(SEED["main"]),
+                    "alpha_one.py", body, None, 0, 10, now, now * 1_000_000, "local", status,
+                ),
+            )
+        conn.commit()
+
+        # ── Access rows the server needs before it will list anything ──────
+        # GET /v1/sessions filters by session_permissions, so a fixture without
+        # these rows is invisible to the Python server even though the
+        # conversations exist. Writing them through the store's own grant call
+        # keeps the level code authoritative rather than guessing at 4.
+        from omnigent.server.auth import LEVEL_OWNER
+
+        local_user = conn.execute("SELECT id FROM users LIMIT 1").fetchone()
+        assert local_user, "the fixture must carry a user row for grants"
+        user_id = local_user[0]
+        for name in ("main", "child", "fork", "archived"):
+            conn.execute(
+                "INSERT INTO session_permissions "
+                "(workspace_id, user_id, conversation_id, level) VALUES (?,?,?,?)",
+                (0, user_id, bytes.fromhex(SEED[name]), LEVEL_OWNER),
+            )
         conn.commit()
     finally:
         conn.close()

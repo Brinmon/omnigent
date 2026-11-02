@@ -3,4 +3,4 @@
 === RUN   TestUuid16RoundTrip
 --- PASS: TestUuid16RoundTrip (0.00s)
 PASS
-ok  	github.com/Brinmon/omnigent/go/internal/db	0.270s
+ok  	github.com/Brinmon/omnigent/go/internal/db	0.249s

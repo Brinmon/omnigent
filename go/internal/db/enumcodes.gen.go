@@ -9,55 +9,55 @@ package db
 // form never leaves the store row-to-entity boundary.
 
 // AccountTokenKind codes for account_tokens.kind.
-var AccountTokenKind = map[string]int16{
+var AccountTokenKind = map[string]int64{
 	"invite": 1,
 	"magic":  2,
 }
 
 // AccountTokenKindName maps a stored code back to its name for account_tokens.kind.
-var AccountTokenKindName = map[int16]string{
+var AccountTokenKindName = map[int64]string{
 	1: "invite",
 	2: "magic",
 }
 
 // AgentKind codes for agents.kind.
-var AgentKind = map[string]int16{
+var AgentKind = map[string]int64{
 	"server": 1,
 	"user":   2,
 }
 
 // AgentKindName maps a stored code back to its name for agents.kind.
-var AgentKindName = map[int16]string{
+var AgentKindName = map[int64]string{
 	1: "server",
 	2: "user",
 }
 
 // CommentStatus codes for comments.status.
-var CommentStatus = map[string]int16{
+var CommentStatus = map[string]int64{
 	"draft":     1,
 	"addressed": 2,
 }
 
 // CommentStatusName maps a stored code back to its name for comments.status.
-var CommentStatusName = map[int16]string{
+var CommentStatusName = map[int64]string{
 	1: "draft",
 	2: "addressed",
 }
 
 // ConversationKind codes for conversations.kind.
-var ConversationKind = map[string]int16{
+var ConversationKind = map[string]int64{
 	"default":   1,
 	"sub_agent": 2,
 }
 
 // ConversationKindName maps a stored code back to its name for conversations.kind.
-var ConversationKindName = map[int16]string{
+var ConversationKindName = map[int64]string{
 	1: "default",
 	2: "sub_agent",
 }
 
 // DeviceGrantStatus codes for device_grants.status.
-var DeviceGrantStatus = map[string]int16{
+var DeviceGrantStatus = map[string]int64{
 	"pending":  1,
 	"approved": 2,
 	"denied":   3,
@@ -66,7 +66,7 @@ var DeviceGrantStatus = map[string]int16{
 }
 
 // DeviceGrantStatusName maps a stored code back to its name for device_grants.status.
-var DeviceGrantStatusName = map[int16]string{
+var DeviceGrantStatusName = map[int64]string{
 	1: "pending",
 	2: "approved",
 	3: "denied",
@@ -75,19 +75,19 @@ var DeviceGrantStatusName = map[int16]string{
 }
 
 // HostStatus codes for hosts.status.
-var HostStatus = map[string]int16{
+var HostStatus = map[string]int64{
 	"online":  1,
 	"offline": 2,
 }
 
 // HostStatusName maps a stored code back to its name for hosts.status.
-var HostStatusName = map[int16]string{
+var HostStatusName = map[int64]string{
 	1: "online",
 	2: "offline",
 }
 
 // ItemStatus codes for conversation_items.status.
-var ItemStatus = map[string]int16{
+var ItemStatus = map[string]int64{
 	"completed":   1,
 	"in_progress": 2,
 	"incomplete":  3,
@@ -95,7 +95,7 @@ var ItemStatus = map[string]int16{
 }
 
 // ItemStatusName maps a stored code back to its name for conversation_items.status.
-var ItemStatusName = map[int16]string{
+var ItemStatusName = map[int64]string{
 	1: "completed",
 	2: "in_progress",
 	3: "incomplete",
@@ -103,7 +103,7 @@ var ItemStatusName = map[int16]string{
 }
 
 // ItemType codes for conversation_items.type.
-var ItemType = map[string]int16{
+var ItemType = map[string]int64{
 	"message":              1,
 	"function_call":        2,
 	"function_call_output": 3,
@@ -118,7 +118,7 @@ var ItemType = map[string]int16{
 }
 
 // ItemTypeName maps a stored code back to its name for conversation_items.type.
-var ItemTypeName = map[int16]string{
+var ItemTypeName = map[int64]string{
 	1:  "message",
 	2:  "function_call",
 	3:  "function_call_output",
@@ -133,43 +133,43 @@ var ItemTypeName = map[int16]string{
 }
 
 // PolicyScope codes for policies.scope.
-var PolicyScope = map[string]int16{
+var PolicyScope = map[string]int64{
 	"default": 1,
 	"session": 2,
 }
 
 // PolicyScopeName maps a stored code back to its name for policies.scope.
-var PolicyScopeName = map[int16]string{
+var PolicyScopeName = map[int64]string{
 	1: "default",
 	2: "session",
 }
 
 // PolicyType codes for policies.type.
-var PolicyType = map[string]int16{
+var PolicyType = map[string]int64{
 	"python": 1,
 	"url":    2,
 }
 
 // PolicyTypeName maps a stored code back to its name for policies.type.
-var PolicyTypeName = map[int16]string{
+var PolicyTypeName = map[int64]string{
 	1: "python",
 	2: "url",
 }
 
 // ScheduledTaskExecutionTarget codes for scheduled_tasks.execution_target.
-var ScheduledTaskExecutionTarget = map[string]int16{
+var ScheduledTaskExecutionTarget = map[string]int64{
 	"connected_host":  1,
 	"managed_sandbox": 2,
 }
 
 // ScheduledTaskExecutionTargetName maps a stored code back to its name for scheduled_tasks.execution_target.
-var ScheduledTaskExecutionTargetName = map[int16]string{
+var ScheduledTaskExecutionTargetName = map[int64]string{
 	1: "connected_host",
 	2: "managed_sandbox",
 }
 
 // ScheduledTaskRunStatus codes for scheduled_task_runs.status.
-var ScheduledTaskRunStatus = map[string]int16{
+var ScheduledTaskRunStatus = map[string]int64{
 	"scheduled": 1,
 	"running":   2,
 	"succeeded": 3,
@@ -179,7 +179,7 @@ var ScheduledTaskRunStatus = map[string]int16{
 }
 
 // ScheduledTaskRunStatusName maps a stored code back to its name for scheduled_task_runs.status.
-var ScheduledTaskRunStatusName = map[int16]string{
+var ScheduledTaskRunStatusName = map[int64]string{
 	1: "scheduled",
 	2: "running",
 	3: "succeeded",
@@ -189,19 +189,19 @@ var ScheduledTaskRunStatusName = map[int16]string{
 }
 
 // ScheduledTaskSessionMode codes for scheduled_tasks.session_mode.
-var ScheduledTaskSessionMode = map[string]int16{
+var ScheduledTaskSessionMode = map[string]int64{
 	"new":      1,
 	"continue": 2,
 }
 
 // ScheduledTaskSessionModeName maps a stored code back to its name for scheduled_tasks.session_mode.
-var ScheduledTaskSessionModeName = map[int16]string{
+var ScheduledTaskSessionModeName = map[int64]string{
 	1: "new",
 	2: "continue",
 }
 
 // ScheduledTaskState codes for scheduled_tasks.state.
-var ScheduledTaskState = map[string]int16{
+var ScheduledTaskState = map[string]int64{
 	"active":    1,
 	"paused":    2,
 	"deleted":   3,
@@ -209,7 +209,7 @@ var ScheduledTaskState = map[string]int16{
 }
 
 // ScheduledTaskStateName maps a stored code back to its name for scheduled_tasks.state.
-var ScheduledTaskStateName = map[int16]string{
+var ScheduledTaskStateName = map[int64]string{
 	1: "active",
 	2: "paused",
 	3: "deleted",
@@ -217,7 +217,7 @@ var ScheduledTaskStateName = map[int16]string{
 }
 
 // SessionLiveStatus codes for omnigent_conversation_metadata.live_status.
-var SessionLiveStatus = map[string]int16{
+var SessionLiveStatus = map[string]int64{
 	"idle":    1,
 	"running": 2,
 	"waiting": 3,
@@ -225,7 +225,7 @@ var SessionLiveStatus = map[string]int16{
 }
 
 // SessionLiveStatusName maps a stored code back to its name for omnigent_conversation_metadata.live_status.
-var SessionLiveStatusName = map[int16]string{
+var SessionLiveStatusName = map[int64]string{
 	1: "idle",
 	2: "running",
 	3: "waiting",
@@ -236,7 +236,7 @@ var SessionLiveStatusName = map[int16]string{
 //
 // An unknown name is an error rather than a zero code so a caller cannot
 // persist a value the reader will not understand.
-func EncodeName(table map[string]int16, field, name string) (int16, error) {
+func EncodeName(table map[string]int64, field, name string) (int64, error) {
 	code, ok := table[name]
 	if !ok {
 		return 0, &UnknownEnumValueError{Field: field, Name: name}
@@ -245,7 +245,7 @@ func EncodeName(table map[string]int16, field, name string) (int16, error) {
 }
 
 // DecodeName maps a stored code back to its enum name.
-func DecodeName(inverse map[int16]string, field string, code int16) (string, error) {
+func DecodeName(inverse map[int64]string, field string, code int64) (string, error) {
 	name, ok := inverse[code]
 	if !ok {
 		return "", &UnknownEnumCodeError{Field: field, Code: code}
@@ -266,7 +266,7 @@ func (e *UnknownEnumValueError) Error() string {
 // UnknownEnumCodeError reports a stored code with no known name.
 type UnknownEnumCodeError struct {
 	Field string
-	Code  int16
+	Code  int64
 }
 
 func (e *UnknownEnumCodeError) Error() string {

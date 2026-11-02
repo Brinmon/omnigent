@@ -1,0 +1,2 @@
+OK: types.gen.go matches openapi.json
+OK: server.gen.go matches openapi.json

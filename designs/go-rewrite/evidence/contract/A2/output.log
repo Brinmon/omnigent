@@ -3,4 +3,4 @@
 === RUN   TestMissingOperationFails
 --- PASS: TestMissingOperationFails (0.02s)
 PASS
-ok  	github.com/Brinmon/omnigent/go/cmd/openapi-diff	0.316s
+ok  	github.com/Brinmon/omnigent/go/cmd/openapi-diff	(cached)

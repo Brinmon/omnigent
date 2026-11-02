@@ -1,0 +1,21 @@
+# oapi-codegen configuration for the Omnigent API.
+#
+# `openapi.json` in the repo root is the single source of truth for the HTTP
+# contract. Generating types from it keeps the Go build faithful to what the
+# Python server sends: a dropped field becomes a missing struct field rather
+# than a silently blank panel in the UI.
+package: api
+
+output: types.gen.go
+generate:
+  models: true
+output-options:
+  # skip-prune must stay TRUE. The SSE endpoint documents its frames with
+  # ``itemSchema`` under ``text/event-stream``, a keyword oapi-codegen does not
+  # treat as a reference, so pruning drops ServerStreamEvent and its 56
+  # variants -- the most contract-critical types in the API -- from the
+  # generated package entirely. Keeping the full model set is a few hundred
+  # extra types and is the only reason the union exists in Go at all.
+  skip-prune: true
+compatibility:
+  always-prefix-enum-values: true

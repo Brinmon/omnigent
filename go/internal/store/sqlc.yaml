@@ -1,0 +1,47 @@
+# sqlc reads the real SQLite schema (exported from a Python-created database)
+# and generates typed queries against it. Using the exported schema rather than
+# a hand-written one keeps the Go layer bound to the actual on-disk shape,
+# including column order and the enum CHECK constraints.
+version: "2"
+sql:
+  - engine: "sqlite"
+    schema: "migrations"
+    queries: "queries.sql"
+    gen:
+      go:
+        package: "store"
+        out: "."
+        emit_json_tags: false
+        emit_prepared_queries: false
+        # Nullable columns become pointers so a caller cannot confuse "empty"
+        # with "absent" -- the distinction matters for archived_at and the
+        # metadata columns the Python side leaves NULL.
+        emit_pointers_for_null_types: true
+        overrides:
+          # Uuid16 columns: 16 raw bytes on disk, 32-char hex everywhere else.
+          # Scanning them as []byte and converting in the store layer keeps the
+          # single conversion point (internal/db) authoritative.
+          - column: "conversations.id"
+            go_type: "github.com/Brinmon/omnigent/go/internal/db.Uuid16"
+          - column: "conversations.parent_conversation_id"
+            go_type: "github.com/Brinmon/omnigent/go/internal/db.Uuid16"
+            nullable: true
+          - column: "conversations.root_conversation_id"
+            go_type: "github.com/Brinmon/omnigent/go/internal/db.Uuid16"
+          - column: "conversations.agent_id"
+            go_type: "github.com/Brinmon/omnigent/go/internal/db.Uuid16"
+            nullable: true
+          - column: "conversation_items.id"
+            go_type: "github.com/Brinmon/omnigent/go/internal/db.Uuid16"
+          - column: "conversation_items.conversation_id"
+            go_type: "github.com/Brinmon/omnigent/go/internal/db.Uuid16"
+          - column: "agents.id"
+            go_type: "github.com/Brinmon/omnigent/go/internal/db.Uuid16"
+          - column: "omnigent_conversation_metadata.id"
+            go_type: "github.com/Brinmon/omnigent/go/internal/db.Uuid16"
+          - column: "omnigent_conversation_metadata.host_id"
+            go_type: "github.com/Brinmon/omnigent/go/internal/db.Uuid16"
+            nullable: true
+          - column: "omnigent_conversation_metadata.project_id"
+            go_type: "github.com/Brinmon/omnigent/go/internal/db.Uuid16"
+            nullable: true

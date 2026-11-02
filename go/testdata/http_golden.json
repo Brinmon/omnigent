@@ -1,0 +1,900 @@
+{
+  "/v1/harnesses": {
+    "body": {
+      "data": [
+        {
+          "capabilities": {
+            "auth": "own-auth",
+            "compaction": null,
+            "effort": "none",
+            "elicitation": "none",
+            "fork_history": "none",
+            "images": null,
+            "instruction_delivery": "composed-per-turn",
+            "integration_mode": "sdk-in-process",
+            "interrupt": true,
+            "live_queue": null,
+            "model_family": "gemini",
+            "resume": "cold-only",
+            "shell_tool_name": null,
+            "shell_tool_prompt": null,
+            "steering": null,
+            "streaming": true,
+            "subagents": false
+          },
+          "id": "antigravity",
+          "label": "Antigravity",
+          "setup_steps": [
+            {
+              "action": "setup",
+              "command": "omni setup",
+              "detail": "Run omni setup on the host to configure this agent.",
+              "kind": "install",
+              "status_key": null,
+              "title": "Set up on the host"
+            }
+          ]
+        },
+        {
+          "capabilities": {
+            "auth": "omnigent-credential",
+            "compaction": null,
+            "effort": "anthropic",
+            "elicitation": "none",
+            "fork_history": "none",
+            "images": null,
+            "instruction_delivery": "composed-session-snapshot",
+            "integration_mode": "sdk-in-process",
+            "interrupt": true,
+            "live_queue": null,
+            "model_family": "claude",
+            "resume": "cold-only",
+            "shell_tool_name": null,
+            "shell_tool_prompt": null,
+            "steering": null,
+            "streaming": true,
+            "subagents": false
+          },
+          "id": "claude-sdk",
+          "label": "Claude SDK",
+          "setup_steps": [
+            {
+              "action": "setup",
+              "command": "omni setup",
+              "detail": "Run omni setup on the host to configure this agent.",
+              "kind": "install",
+              "status_key": null,
+              "title": "Set up on the host"
+            }
+          ]
+        },
+        {
+          "capabilities": {
+            "auth": "omnigent-credential",
+            "compaction": null,
+            "effort": "openai",
+            "elicitation": "jsonrpc",
+            "fork_history": "none",
+            "images": null,
+            "instruction_delivery": "composed-per-turn",
+            "integration_mode": "cli-subprocess",
+            "interrupt": true,
+            "live_queue": null,
+            "model_family": "gpt",
+            "resume": "warm-reattach",
+            "shell_tool_name": null,
+            "shell_tool_prompt": null,
+            "steering": null,
+            "streaming": true,
+            "subagents": false
+          },
+          "id": "codex",
+          "label": "Codex",
+          "setup_steps": [
+            {
+              "action": "install",
+              "command": null,
+              "detail": "We'll install Codex on the host for you.",
+              "kind": "install",
+              "status_key": "installed",
+              "title": "Install Codex"
+            },
+            {
+              "action": "auth",
+              "command": "codex login",
+              "detail": "Sign in with your ChatGPT subscription, an API key, or a gateway.",
+              "kind": "auth",
+              "status_key": "authed",
+              "title": "Set up authentication"
+            }
+          ]
+        },
+        {
+          "capabilities": {
+            "auth": "own-auth",
+            "compaction": null,
+            "effort": "copilot",
+            "elicitation": "none",
+            "fork_history": "none",
+            "images": null,
+            "instruction_delivery": "composed-per-turn",
+            "integration_mode": "sdk-in-process",
+            "interrupt": true,
+            "live_queue": null,
+            "model_family": "multi",
+            "resume": "cold-only",
+            "shell_tool_name": null,
+            "shell_tool_prompt": null,
+            "steering": null,
+            "streaming": true,
+            "subagents": false
+          },
+          "id": "copilot",
+          "label": "Copilot",
+          "setup_steps": [
+            {
+              "action": "setup",
+              "command": "omni setup",
+              "detail": "Run omni setup on the host to configure this agent.",
+              "kind": "install",
+              "status_key": null,
+              "title": "Set up on the host"
+            }
+          ]
+        },
+        {
+          "capabilities": {
+            "auth": "own-auth",
+            "compaction": null,
+            "effort": "none",
+            "elicitation": "none",
+            "fork_history": "none",
+            "images": null,
+            "instruction_delivery": "first-user-prefix",
+            "integration_mode": "sdk-in-process",
+            "interrupt": true,
+            "live_queue": null,
+            "model_family": "multi",
+            "resume": "warm-reattach",
+            "shell_tool_name": null,
+            "shell_tool_prompt": null,
+            "steering": null,
+            "streaming": true,
+            "subagents": false
+          },
+          "id": "cursor",
+          "label": "Cursor",
+          "setup_steps": [
+            {
+              "action": "setup",
+              "command": "omni setup",
+              "detail": "Run omni setup on the host to configure this agent.",
+              "kind": "install",
+              "status_key": null,
+              "title": "Set up on the host"
+            }
+          ]
+        },
+        {
+          "capabilities": {
+            "auth": "own-auth",
+            "compaction": true,
+            "effort": "anthropic",
+            "elicitation": "hook",
+            "fork_history": "preamble",
+            "images": true,
+            "instruction_delivery": "agent-startup-additive",
+            "integration_mode": "native-tui",
+            "interrupt": true,
+            "live_queue": true,
+            "model_family": "multi",
+            "resume": "warm-reattach",
+            "shell_tool_name": "exec",
+            "shell_tool_prompt": "Use your shell/terminal tool to run this exact command: echo omnigent-bench-ok",
+            "steering": true,
+            "streaming": false,
+            "subagents": true
+          },
+          "id": "devin-native",
+          "label": "Devin",
+          "setup_steps": [
+            {
+              "action": "setup",
+              "command": "omni setup",
+              "detail": "Run omni setup on the host to configure this agent.",
+              "kind": "install",
+              "status_key": null,
+              "title": "Set up on the host"
+            }
+          ]
+        },
+        {
+          "capabilities": {
+            "auth": "own-auth",
+            "compaction": null,
+            "effort": "none",
+            "elicitation": "sse-permission",
+            "fork_history": "none",
+            "images": null,
+            "instruction_delivery": "first-user-prefix",
+            "integration_mode": "acp-subprocess",
+            "interrupt": true,
+            "live_queue": null,
+            "model_family": "multi",
+            "resume": "cold-only",
+            "shell_tool_name": null,
+            "shell_tool_prompt": null,
+            "steering": null,
+            "streaming": true,
+            "subagents": false
+          },
+          "id": "grok",
+          "label": "Grok Build",
+          "setup_steps": [
+            {
+              "action": "setup",
+              "command": "omni setup",
+              "detail": "Run omni setup on the host to configure this agent.",
+              "kind": "install",
+              "status_key": null,
+              "title": "Set up on the host"
+            }
+          ]
+        },
+        {
+          "capabilities": {
+            "auth": "own-auth",
+            "compaction": null,
+            "effort": "none",
+            "elicitation": "hook",
+            "fork_history": "none",
+            "images": null,
+            "instruction_delivery": "first-user-prefix",
+            "integration_mode": "cli-subprocess",
+            "interrupt": true,
+            "live_queue": null,
+            "model_family": "multi",
+            "resume": "cold-only",
+            "shell_tool_name": null,
+            "shell_tool_prompt": null,
+            "steering": null,
+            "streaming": true,
+            "subagents": false
+          },
+          "id": "hermes",
+          "label": "Hermes",
+          "setup_steps": [
+            {
+              "action": "setup",
+              "command": "omni setup",
+              "detail": "Run omni setup on the host to configure this agent.",
+              "kind": "install",
+              "status_key": null,
+              "title": "Set up on the host"
+            }
+          ]
+        },
+        {
+          "capabilities": {
+            "auth": "own-auth",
+            "compaction": null,
+            "effort": "none",
+            "elicitation": "sse-permission",
+            "fork_history": "none",
+            "images": null,
+            "instruction_delivery": "first-user-prefix",
+            "integration_mode": "acp-subprocess",
+            "interrupt": true,
+            "live_queue": null,
+            "model_family": "multi",
+            "resume": "cold-only",
+            "shell_tool_name": null,
+            "shell_tool_prompt": null,
+            "steering": null,
+            "streaming": true,
+            "subagents": false
+          },
+          "id": "jcode",
+          "label": "Jcode",
+          "setup_steps": [
+            {
+              "action": "setup",
+              "command": "omni setup",
+              "detail": "Run omni setup on the host to configure this agent.",
+              "kind": "install",
+              "status_key": null,
+              "title": "Set up on the host"
+            }
+          ]
+        },
+        {
+          "capabilities": {
+            "auth": "omnigent-credential",
+            "compaction": null,
+            "effort": "pi",
+            "elicitation": "none",
+            "fork_history": "none",
+            "images": null,
+            "instruction_delivery": "composed-per-turn",
+            "integration_mode": "cli-subprocess",
+            "interrupt": true,
+            "live_queue": null,
+            "model_family": "multi",
+            "resume": "cold-only",
+            "shell_tool_name": null,
+            "shell_tool_prompt": null,
+            "steering": null,
+            "streaming": true,
+            "subagents": false
+          },
+          "id": "pi",
+          "label": "Pi",
+          "setup_steps": [
+            {
+              "action": "install",
+              "command": null,
+              "detail": "We'll install Pi on the host for you.",
+              "kind": "install",
+              "status_key": "installed",
+              "title": "Install Pi"
+            },
+            {
+              "action": "auth",
+              "command": null,
+              "detail": "Add an API key or a gateway so Pi can run.",
+              "kind": "auth",
+              "status_key": "authed",
+              "title": "Set up authentication"
+            }
+          ]
+        }
+      ],
+      "setup_steps": {
+        "acp": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "antigravity": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "antigravity-native": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "claude": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install Claude on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install Claude"
+          },
+          {
+            "action": "auth",
+            "command": "claude auth login --claudeai",
+            "detail": "Sign in with your Claude subscription, an API key, or a gateway.",
+            "kind": "auth",
+            "status_key": "authed",
+            "title": "Set up authentication"
+          }
+        ],
+        "claude-native": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install Claude on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install Claude"
+          },
+          {
+            "action": "auth",
+            "command": "claude auth login --claudeai",
+            "detail": "Sign in with your Claude subscription, an API key, or a gateway.",
+            "kind": "auth",
+            "status_key": "authed",
+            "title": "Set up authentication"
+          }
+        ],
+        "claude-sdk": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "codex": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install Codex on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install Codex"
+          },
+          {
+            "action": "auth",
+            "command": "codex login",
+            "detail": "Sign in with your ChatGPT subscription, an API key, or a gateway.",
+            "kind": "auth",
+            "status_key": "authed",
+            "title": "Set up authentication"
+          }
+        ],
+        "codex-native": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install Codex on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install Codex"
+          },
+          {
+            "action": "auth",
+            "command": "codex login",
+            "detail": "Sign in with your ChatGPT subscription, an API key, or a gateway.",
+            "kind": "auth",
+            "status_key": "authed",
+            "title": "Set up authentication"
+          }
+        ],
+        "copilot": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "cursor": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "cursor-native": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "devin-native": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "goose": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "goose-native": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "grok": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "hermes": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "hermes-native": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "jcode": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "kimi": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "kimi-native": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "kiro-native": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "native-opencode": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install OpenCode on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install OpenCode"
+          },
+          {
+            "action": "command",
+            "command": "opencode auth login",
+            "detail": "OpenCode's free models work without signing in. Sign in on the host to use your own providers.",
+            "kind": "auth",
+            "status_key": null,
+            "title": "Sign in to a provider (optional)"
+          }
+        ],
+        "native-qwen": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install Qwen Code on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install Qwen Code"
+          },
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Qwen needs an API key or gateway. Set it up on the host for now.",
+            "kind": "auth",
+            "status_key": null,
+            "title": "Add a Qwen credential"
+          }
+        ],
+        "open-responses": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "openai-agents": [
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Run omni setup on the host to configure this agent.",
+            "kind": "install",
+            "status_key": null,
+            "title": "Set up on the host"
+          }
+        ],
+        "opencode": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install OpenCode on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install OpenCode"
+          },
+          {
+            "action": "command",
+            "command": "opencode auth login",
+            "detail": "OpenCode's free models work without signing in. Sign in on the host to use your own providers.",
+            "kind": "auth",
+            "status_key": null,
+            "title": "Sign in to a provider (optional)"
+          }
+        ],
+        "opencode-native": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install OpenCode on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install OpenCode"
+          },
+          {
+            "action": "command",
+            "command": "opencode auth login",
+            "detail": "OpenCode's free models work without signing in. Sign in on the host to use your own providers.",
+            "kind": "auth",
+            "status_key": null,
+            "title": "Sign in to a provider (optional)"
+          }
+        ],
+        "pi": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install Pi on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install Pi"
+          },
+          {
+            "action": "auth",
+            "command": null,
+            "detail": "Add an API key or a gateway so Pi can run.",
+            "kind": "auth",
+            "status_key": "authed",
+            "title": "Set up authentication"
+          }
+        ],
+        "pi-native": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install Pi on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install Pi"
+          },
+          {
+            "action": "auth",
+            "command": null,
+            "detail": "Add an API key or a gateway so Pi can run.",
+            "kind": "auth",
+            "status_key": "authed",
+            "title": "Set up authentication"
+          }
+        ],
+        "qwen": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install Qwen Code on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install Qwen Code"
+          },
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Qwen needs an API key or gateway. Set it up on the host for now.",
+            "kind": "auth",
+            "status_key": null,
+            "title": "Add a Qwen credential"
+          }
+        ],
+        "qwen-code": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install Qwen Code on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install Qwen Code"
+          },
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Qwen needs an API key or gateway. Set it up on the host for now.",
+            "kind": "auth",
+            "status_key": null,
+            "title": "Add a Qwen credential"
+          }
+        ],
+        "qwen-native": [
+          {
+            "action": "install",
+            "command": null,
+            "detail": "We'll install Qwen Code on the host for you.",
+            "kind": "install",
+            "status_key": "installed",
+            "title": "Install Qwen Code"
+          },
+          {
+            "action": "setup",
+            "command": "omni setup",
+            "detail": "Qwen needs an API key or gateway. Set it up on the host for now.",
+            "kind": "auth",
+            "status_key": null,
+            "title": "Add a Qwen credential"
+          }
+        ]
+      }
+    },
+    "status": 200
+  },
+  "/v1/info": {
+    "body": {
+      "accounts_enabled": false,
+      "agent_config_edit": true,
+      "agent_detail": true,
+      "agent_install": true,
+      "archive_worktree_cleanup": true,
+      "automations_enabled": true,
+      "branding": {
+        "app_name": null,
+        "heading": null,
+        "logos": {
+          "favicon": null,
+          "loading": null,
+          "main": null
+        },
+        "powered_by": true
+      },
+      "databricks_features": false,
+      "dictation_available": false,
+      "durable_initial_input": false,
+      "enabled_connections": [],
+      "features": {
+        "arca_shutdown_warnings": false,
+        "automations_v2": false,
+        "canvas": false,
+        "codex_plan_at_launch": true,
+        "custom_agents_settings_ui": false,
+        "grid_sessions_display_ui": false,
+        "harness_install": false,
+        "import_review": false,
+        "sandbox_profiles": false,
+        "session_orchestration": true,
+        "sidebar_grouping_ui": false,
+        "splittable_terminal_view_ui": false,
+        "usage_page": false,
+        "workspace_content_search": false
+      },
+      "filesystem_attachments": {
+        "all_types": false,
+        "extensions": [
+          ".db",
+          ".docx",
+          ".pptx",
+          ".sqlite",
+          ".sqlite3",
+          ".xlsx",
+          ".zip"
+        ]
+      },
+      "harness_install_enabled": false,
+      "installable_harnesses": [],
+      "login_url": null,
+      "managed_sandboxes_enabled": false,
+      "needs_setup": false,
+      "picker": {
+        "default_agent_name": null,
+        "restrict_to_agent_names": []
+      },
+      "public_sharing_enabled": true,
+      "public_sharing_max_level": "read",
+      "request_managed_sandbox_host_id": true,
+      "sandbox_provider": null,
+      "sandbox_provider_capabilities": {},
+      "sandbox_providers": [],
+      "scheduled_task_projects": true,
+      "scheduled_task_session_modes": true,
+      "server_version": "0.21.0.dev0",
+      "session_event_types": [
+        "approval",
+        "clear",
+        "compact",
+        "compaction",
+        "error",
+        "external_btw_dismiss",
+        "function_call",
+        "function_call_output",
+        "interrupt",
+        "mcp_elicitation",
+        "message",
+        "native_tool",
+        "reasoning",
+        "resource_event",
+        "retry_session",
+        "routing_decision",
+        "slash_command",
+        "stop_session",
+        "terminal_command"
+      ],
+      "session_fork_workspaces": true,
+      "session_pull_requests": true,
+      "session_search_scope": true,
+      "sharing_mode": "on",
+      "single_user": true,
+      "smart_routing_enabled": false,
+      "smart_routing_sources": {
+        "external": false,
+        "oss": false
+      }
+    },
+    "status": 200
+  },
+  "/v1/me": {
+    "body": {
+      "is_admin": true,
+      "user_id": "local"
+    },
+    "status": 200
+  },
+  "/v1/sessions": {
+    "body": {
+      "data": [],
+      "first_id": null,
+      "has_more": false,
+      "last_id": null,
+      "object": "list"
+    },
+    "status": 200
+  }
+}
