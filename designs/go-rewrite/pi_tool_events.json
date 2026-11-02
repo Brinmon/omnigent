@@ -1,0 +1,24 @@
+[
+  {
+    "args": {},
+    "toolCallId": "call_00_65mb9hy993r02sy6m6vhofbr|item_07a831e8850cf2161b8f75cb",
+    "toolName": "omnigent_probe",
+    "type": "tool_execution_start"
+  },
+  {
+    "durationMs": 1,
+    "isError": false,
+    "result": {
+      "content": [
+        {
+          "text": "{\"content\":\"PROBE_TOOL_RESULT\"}",
+          "type": "text"
+        }
+      ],
+      "isError": false
+    },
+    "toolCallId": "call_00_65mb9hy993r02sy6m6vhofbr|item_07a831e8850cf2161b8f75cb",
+    "toolName": "omnigent_probe",
+    "type": "tool_execution_end"
+  }
+]

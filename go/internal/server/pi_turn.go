@@ -285,6 +285,48 @@ func (s *Server) consumePiEvents(
 					})
 				}
 
+			case "tool_execution_start":
+				// The call is recorded before its result so a reload shows the
+				// invocation even if the result never arrives.
+				name, _ := event.Raw["toolName"].(string)
+				callID, _ := event.Raw["toolCallId"].(string)
+				if args, err := json.Marshal(event.Raw["args"]); err == nil {
+					recorder.addToolCall(name, callID, args)
+				}
+				hub.Publish(stream.Event{
+					Type: "response.output_item.done",
+					Payload: map[string]any{
+						"type":            "response.output_item.done",
+						"conversation_id": sessionID,
+						"sequence_number": nil,
+						"item": map[string]any{
+							"type":    "function_call",
+							"name":    name,
+							"call_id": callID,
+							"args":    event.Raw["args"],
+						},
+					},
+				})
+
+			case "tool_execution_end":
+				name, _ := event.Raw["toolName"].(string)
+				callID, _ := event.Raw["toolCallId"].(string)
+				isError, _ := event.Raw["isError"].(bool)
+				output := toolResultText(event.Raw)
+				recorder.addToolResult(callID, output, isError)
+				hub.Publish(stream.Event{
+					Type: "response.function_call_output.delta",
+					Payload: map[string]any{
+						"type":            "response.function_call_output.delta",
+						"conversation_id": sessionID,
+						"sequence_number": nil,
+						"call_id":         callID,
+						"name":            name,
+						"output":          output,
+						"is_error":        isError,
+					},
+				})
+
 			case "auto_retry_start":
 				// Surfacing the retry lets the UI show why a turn is slow
 				// instead of appearing stalled.
@@ -545,4 +587,43 @@ func (s *Server) abortPiSession(ctx context.Context, sessionID string) bool {
 	// and the cancel path remains as the outer bound.
 	_ = session.Abort(ctx)
 	return true
+}
+
+// toolResultText flattens a tool_execution_end result into the string the store
+// keeps.
+//
+// Pi reports the result as a structured object (“{content:[{type,text}], isError}“)
+// for a bridged tool and as a bare value otherwise; the stored column holds text,
+// so both are reduced here rather than at the read path.
+func toolResultText(raw map[string]any) string {
+	result, present := raw["result"]
+	if !present || result == nil {
+		return ""
+	}
+	if text, ok := result.(string); ok {
+		return text
+	}
+	if object, ok := result.(map[string]any); ok {
+		if content, ok := object["content"].([]any); ok {
+			var out strings.Builder
+			for _, part := range content {
+				partMap, ok := part.(map[string]any)
+				if !ok {
+					continue
+				}
+				if text, ok := partMap["text"].(string); ok {
+					out.WriteString(text)
+				}
+			}
+			if out.Len() > 0 {
+				return out.String()
+			}
+		}
+	}
+	// Anything else is encoded so the row carries the result rather than "null".
+	encoded, err := json.Marshal(result)
+	if err != nil {
+		return ""
+	}
+	return string(encoded)
 }

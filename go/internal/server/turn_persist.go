@@ -68,6 +68,48 @@ func (r *turnRecorder) addUserMessage(text string) {
 	})
 }
 
+// addToolCall records a tool invocation.
+//
+// “arguments“ is stored as a JSON *string*, not an object: that is how the
+// Python store writes it, and “parse_item_data“ reads it back expecting a
+// string. Storing an object would make the row unreadable by the Python side.
+func (r *turnRecorder) addToolCall(name, callID string, args json.RawMessage) {
+	arguments := string(args)
+	if arguments == "" {
+		arguments = "{}"
+	}
+	r.items = append(r.items, pendingItem{
+		itemType: "function_call",
+		data: map[string]any{
+			"agent":     "pi",
+			"name":      name,
+			"arguments": arguments,
+			"call_id":   callID,
+		},
+		search:    name,
+		createdAt: time.Now().Unix(),
+	})
+}
+
+// addToolResult records a tool's output.
+func (r *turnRecorder) addToolResult(callID, output string, isError bool) {
+	data := map[string]any{
+		"call_id": callID,
+		"output":  output,
+	}
+	if isError {
+		// The stored shape mirrors MessageData/ErrorData's convention: a
+		// failure is flagged rather than inferred from the text.
+		data["is_error"] = true
+	}
+	r.items = append(r.items, pendingItem{
+		itemType:  "function_call_output",
+		data:      data,
+		search:    output,
+		createdAt: time.Now().Unix(),
+	})
+}
+
 // addAssistantMessage records the reply.
 func (r *turnRecorder) addAssistantMessage(text, model string) {
 	if strings.TrimSpace(text) == "" {
