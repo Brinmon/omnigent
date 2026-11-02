@@ -10,6 +10,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"os"
 	"sync"
@@ -20,6 +21,7 @@ import (
 	"github.com/Brinmon/omnigent/go/internal/api"
 	"github.com/Brinmon/omnigent/go/internal/db"
 	"github.com/Brinmon/omnigent/go/internal/pi"
+	"github.com/Brinmon/omnigent/go/internal/policy"
 	"github.com/Brinmon/omnigent/go/internal/store"
 	"github.com/Brinmon/omnigent/go/internal/stream"
 )
@@ -45,6 +47,9 @@ type Server struct {
 	// streamEpoch identifies this process's stream generation so a client that
 	// reconnects after a restart knows its cached snapshot may be stale.
 	streamEpoch string
+	// policies gates tool calls and request phases. Nil means nothing is gated,
+	// which is the behaviour a build with no policies configured has.
+	policies *policy.Engine
 	// pi is how to launch the harness, or why it cannot be launched. Resolved
 	// once at startup so a turn does not pay for the lookup, and so a build with
 	// no Pi installed still serves the read API and can say why.
@@ -66,6 +71,21 @@ var _ api.ServerInterface = (*Server)(nil)
 
 // New builds a Server over the given database.
 func New(conn *sql.DB, version string) *Server {
+	// A malformed policy configuration is fatal rather than a warning: silently
+	// running with no policies would remove a guardrail without saying so, and the
+	// operator who set OMNIGENT_POLICY_RULES would not learn it did not apply.
+	policyRules, err := LoadPolicyRules()
+	if err != nil {
+		panic(err)
+	}
+	engine, err := policy.NewEngine(policyRules)
+	if err != nil {
+		panic(err)
+	}
+	if !engine.Empty() {
+		slog.Info("policy engine loaded", "rules", engine.Rules())
+	}
+
 	return &Server{
 		db:          conn,
 		queries:     store.New(conn),
@@ -75,6 +95,7 @@ func New(conn *sql.DB, version string) *Server {
 		streamEpoch: streamEpochValue(os.Getpid(), time.Now()),
 		pi:          resolvePiConfig(),
 		activeTurns: make(map[string]context.CancelFunc),
+		policies:    engine,
 	}
 }
 

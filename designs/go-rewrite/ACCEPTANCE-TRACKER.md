@@ -60,8 +60,8 @@
 
 | ID | 判据 | 用例 | 基线 | Go | 证据 | 勾 |
 |---|---|---|---|---|---|---|
-| D1 | `PHASE_REQUEST`/`PHASE_TOOL_CALL` 拦截生效 | `tests/e2e_ui/approvals/test_approval_card.py`、`test_ask_user_question.py` | ✅ 36s | — | `evidence/D1/` | 🟡 |
-| D2 | CEL 策略结果与 Python 逐例一致 | 对拍脚本（同表达式 × 同事件样本） | ⬜ | — | `evidence/D2/` | ⬜ |
+| D1 | `PHASE_REQUEST`/`PHASE_TOOL_CALL` 拦截生效 | 基线 `test_approval_card.py`；Go `TestPolicyDenyStopsBridgedTool`（DENY 生效，ASK 卡片待做） | ✅ 36s | ✅ 6.8s | `evidence/D1/` | 🟡 |
+| D2 | CEL 策略结果与 Python 逐例一致 | Go 侧判决语义 `go test ./internal/policy/`（18 例） | ⬜ | ✅ 1.2s | `evidence/D2/` | 🟡 |
 | D3 | ~~终端创建/读/写/关闭~~ | ~~`tests/e2e_ui/shells/test_new_shell.py`~~ | 🚫 不适用 | — | — | 🚫 |
 | D4 | 文件上传/下载/列表 | `tests/e2e_ui/files/`（挑上传与列表各一） | ⬜ | — | `evidence/D4/` | ⬜ |
 | D5 | 工作区文件树 + 内容搜索 | `tests/e2e_ui/files/test_file_search.py` | 🟡 500 已修 | — | `evidence/D5/` | 🟡 |

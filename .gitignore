@@ -120,3 +120,8 @@ go/.omnigent-go.exe
 go/.omnigent-go.exe~
 go/.last-run.log
 go/.pi-rpc-probe/
+go/.omnigent-go.exe
+go/.omnigent-go.exe~
+go/.last-run.log
+go/.pi-rpc-probe/
+go/.verify_persist.py

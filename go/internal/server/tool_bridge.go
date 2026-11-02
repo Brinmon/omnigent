@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Brinmon/omnigent/go/internal/policy"
 	"github.com/Brinmon/omnigent/go/internal/toolbridge"
 )
 
@@ -69,8 +70,12 @@ func (s *Server) startToolBridge(
 	sessionID string,
 	workdir string,
 ) (*toolbridge.Server, string, func(), error) {
+	execute, err := s.gatedToolHandler(workdir, ctx, sessionID)
+	if err != nil {
+		return nil, "", nil, err
+	}
 	bridge, err := toolbridge.NewServer(
-		s.executeBridgedTool(workdir),
+		execute,
 		s.evaluateNativeTool(ctx, sessionID),
 	)
 	if err != nil {
@@ -156,17 +161,56 @@ func (s *Server) executeBridgedTool(workdir string) toolbridge.ToolHandler {
 
 // evaluateNativeTool returns the policy handler for Pi's own tools.
 //
-// P4 has no policy engine, so the verdict is always "allow" -- but the path is
-// live, which is what D1 asserts: a native call reaches Omnigent and is recorded
-// with its name and arguments before Pi runs it.
+// Pi runs a native tool in-process, so this is the only enforcement point for
+// one: the verdict returned here decides whether Pi's own bash/read/write calls
+// proceed. A nil verdict means "no opinion", which the extension treats as allow.
 func (s *Server) evaluateNativeTool(ctx context.Context, sessionID string) toolbridge.PolicyHandler {
 	return func(callCtx context.Context, tool string, rawArgs json.RawMessage) (*toolbridge.Verdict, error) {
+		engine := s.policyEngine(ctx, sessionID)
+		if engine.Empty() {
+			return nil, nil
+		}
 		slog.Debug("native tool call observed",
 			"session", sessionID, "tool", tool, "args", string(rawArgs))
-		// A nil verdict means "no opinion", which the extension treats as allow
-		// and Pi then executes the tool itself.
-		return nil, nil
+
+		result := engine.Evaluate(callCtx, policy.Event{
+			Type:   policy.PhaseToolCall,
+			Target: tool,
+			Text:   string(rawArgs),
+			Data:   map[string]any{"harness": "pi", "native": true},
+		})
+		return verdictFor(result), nil
 	}
+}
+
+// verdictFor maps an engine decision to the extension's verdict shape.
+//
+// ASK is reported as a block with the ask reason: Pi's tool_call hook has no
+// way to park a call, so the honest translation is to stop it and say why. A
+// turn-level ASK (the approval card) needs the response flow, not this hook.
+func verdictFor(result policy.Result) *toolbridge.Verdict {
+	switch result.Action {
+	case policy.Deny:
+		return &toolbridge.Verdict{Block: true, Reason: reasonOr(result, "blocked by Omnigent policy")}
+	case policy.Ask:
+		return &toolbridge.Verdict{
+			Block:  true,
+			Reason: reasonOr(result, "requires approval, which this build cannot collect yet"),
+		}
+	default:
+		return nil
+	}
+}
+
+// reasonOr returns the policy's reason, or a default when it gave none.
+func reasonOr(result policy.Result, fallback string) string {
+	if strings.TrimSpace(result.Reason) != "" {
+		return result.Reason
+	}
+	if result.Policy != "" {
+		return "blocked by policy " + result.Policy
+	}
+	return fallback
 }
 
 // resolveInWorkspace maps a client-supplied path into the turn's workspace.
@@ -224,4 +268,70 @@ func BuildExtensionSource() (string, error) {
 		Token: "generated",
 		Tools: bridgedTools,
 	})
+}
+
+// gatedToolHandler wraps the executor with the TOOL_CALL policy gate.
+//
+// The gate runs in the same handler as the execution rather than as a separate
+// step, so there is no window between "allowed" and "ran" and no second place
+// that could forget to check.
+func (s *Server) gatedToolHandler(
+	workdir string,
+	ctx context.Context,
+	sessionID string,
+) (toolbridge.ToolHandler, error) {
+	execute := s.executeBridgedTool(workdir)
+	return func(callCtx context.Context, tool string, rawArgs json.RawMessage, callID string) (any, error) {
+		engine := s.policyEngine(callCtx, sessionID)
+		if !engine.Empty() {
+			result := engine.Evaluate(callCtx, policy.Event{
+				Type:   policy.PhaseToolCall,
+				Target: tool,
+				Text:   string(rawArgs),
+				Data:   map[string]any{"harness": "pi", "native": false},
+			})
+			if result.Action != policy.Allow {
+				// A blocked call stops here, before anything runs. The extension
+				// surfaces the reason to Pi as a failed tool result, so the model
+				// sees why instead of retrying blindly.
+				slog.Info("bridged tool call blocked",
+					"session", sessionID, "tool", tool,
+					"policy", result.Policy, "action", result.Action)
+				return nil, errors.New(reasonOr(result, "blocked by Omnigent policy"))
+			}
+		}
+		return execute(callCtx, tool, rawArgs, callID)
+	}, nil
+}
+
+// policyEngine returns the engine to evaluate against for a session.
+//
+// Session-scoped policies arrive with the policy store; until then the engine is
+// the server's configured set, which is what lets an operator gate tool calls
+// without a database write.
+func (s *Server) policyEngine(ctx context.Context, sessionID string) *policy.Engine {
+	if s.policies == nil {
+		return nil
+	}
+	return s.policies
+}
+
+// LoadPolicyRules reads policy rules from OMNIGENT_POLICY_RULES.
+//
+// The value is a JSON array of rules. A file or database source arrives with the
+// policy store; an environment variable is enough to exercise the gate and to let
+// an operator add a deny-list to a running build.
+//
+// A parse failure is returned rather than ignored: a malformed policy that
+// silently becomes "no policy" would remove a guardrail without saying so.
+func LoadPolicyRules() ([]policy.Rule, error) {
+	raw := os.Getenv("OMNIGENT_POLICY_RULES")
+	if strings.TrimSpace(raw) == "" {
+		return nil, nil
+	}
+	var rules []policy.Rule
+	if err := json.Unmarshal([]byte(raw), &rules); err != nil {
+		return nil, fmt.Errorf("OMNIGENT_POLICY_RULES is not a valid rule array: %w", err)
+	}
+	return rules, nil
 }

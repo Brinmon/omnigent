@@ -22,7 +22,7 @@ internal/api/        generated OpenAPI types and server interface
 internal/db/         on-disk encodings shared with Python (Uuid16, enum codes, CompressedText)
 internal/event/      the 56 SSE event types
 internal/harness/    harness Backend interface plus the pi implementation
-internal/policy/     CEL policy evaluation
+internal/policy/     CEL policy engine (ALLOW / ASK / DENY, deny precedence)
 internal/runner/     per-session runner (P3)
 internal/store/      SQLite access
 internal/stream/     session event fan-out (ordering, backpressure, SSE wire format)
