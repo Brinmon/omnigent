@@ -34,16 +34,18 @@ from omnigent.server.routes._auth_helpers import require_user
 from omnigent.server.routes._host_launch import resolve_host_owner
 from omnigent.server.routes._session_create_validation import (
     validate_existing_host_workspace,
-    validate_permission_mode_agent_support,
     validate_session_agent,
     validate_session_model_metadata,
-    validate_session_permission_mode,
 )
 from omnigent.server.routes._sessions.helpers import (
     _read_state_entry,
     _session_status_from_cache,
 )
 from omnigent.server.routes._sessions.orchestration import _list_status_with_starting
+from omnigent.server.scheduled.harness_settings import (
+    validate_scheduled_permission_mode,
+    validate_scheduled_permission_support,
+)
 from omnigent.server.scheduled.rrule import RRuleSearchError, RRuleValidationError, validate_rrule
 from omnigent.server.scheduled.run_reconciler import force_fail_stale_runs
 from omnigent.stores import AgentStore, ConversationStore, PermissionStore
@@ -77,8 +79,7 @@ class CreateScheduledTaskRequest(BaseModel):
     timezone: str = "UTC"
     model_override: str | None = None
     reasoning_effort: str | None = None
-    # Native-harness permission mode (Claude Code), e.g. "acceptEdits". The fire
-    # path derives the runner's --permission-mode launch arg from it.
+    # Native-harness permission or execution mode; validated against the agent.
     permission_mode: str | None = None
     max_cost_usd: float | None = Field(default=None, gt=0)
     # "continue" sends every run's prompt into one session: ``session_id`` when
@@ -364,10 +365,8 @@ def create_scheduled_tasks_router(
             model_override=model_override,
             reasoning_effort=reasoning_effort,
         )
-        # Gate permission_mode on the resolved agent's harness (Claude Code
-        # only), mirroring the web dialog's capability gate. A non-Claude agent
-        # carrying a mode would break the fire (unknown --permission-mode flag).
-        await validate_permission_mode_agent_support(
+        # Each harness has its own permission vocabulary and launch flags.
+        await validate_scheduled_permission_support(
             permission_mode=permission_mode,
             agent=agent,
             agent_cache=agent_cache,
@@ -494,7 +493,7 @@ def create_scheduled_tasks_router(
         owner = _owner(request)
         await _validate_rrule_or_400(body.rrule)
         _validate_timezone_or_400(body.timezone)
-        permission_mode = validate_session_permission_mode(body.permission_mode)
+        permission_mode = validate_scheduled_permission_mode(body.permission_mode)
         agent, workspace, model_override, reasoning_effort = await _validate_launch_inputs(
             request,
             owner=owner,
@@ -781,7 +780,7 @@ def create_scheduled_tasks_router(
         new_copy: Agent | None = None
         if agent_changed:
             # A harness switch invalidates the per-agent settings stored beside
-            # it: a model id is provider-bound and permission_mode is Claude-only.
+            # it: model ids and permission vocabularies belong to the harness.
             # Clear whichever the caller did not resend so a switched task never
             # fires the new harness with the old one's flags.
             for stale in ("model_override", "reasoning_effort", "permission_mode"):
@@ -796,7 +795,7 @@ def create_scheduled_tasks_router(
             if "reasoning_effort" in fields:
                 fields["reasoning_effort"] = reasoning_effort
         if "permission_mode" in fields:
-            new_mode = validate_session_permission_mode(fields["permission_mode"])
+            new_mode = validate_scheduled_permission_mode(fields["permission_mode"])
             fields["permission_mode"] = new_mode
             # Gate a newly-SET mode on the (immutable) agent's harness. Clearing
             # to null needs no gate — the fire path injects nothing for null.
@@ -808,7 +807,7 @@ def create_scheduled_tasks_router(
                     permission_store=permission_store,
                     conversation_store=conversation_store,
                 )
-                await validate_permission_mode_agent_support(
+                await validate_scheduled_permission_support(
                     permission_mode=new_mode,
                     agent=agent,
                     agent_cache=agent_cache,

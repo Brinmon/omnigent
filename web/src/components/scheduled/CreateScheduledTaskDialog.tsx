@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/scheduled/Label";
 import { ScheduleFields } from "@/components/scheduled/ScheduleFields";
+import { useScheduledHarnessSettings } from "./useScheduledHarnessSettings";
 import { ModelEffortFields } from "@/components/scheduled/ModelEffortFields";
 import { TriggerTemplateFields } from "@/components/scheduled/TriggerTemplateFields";
 import {
@@ -50,7 +51,7 @@ import { useHosts } from "@/hooks/useHosts";
 import { useServerInfo } from "@/lib/CapabilitiesContext";
 import { isFeatureEnabled, sandboxOptionLabel } from "@/lib/capabilities";
 import { useCreateScheduledTask, useUpdateScheduledTask } from "@/hooks/useScheduledTasks";
-import { isNativeCodingAgent, nativeAgentHasCapability } from "@/lib/nativeCodingAgents";
+import { isNativeCodingAgent } from "@/lib/nativeCodingAgents";
 import { isAcpHarnessAgent, selectableSessionAgents } from "@/lib/agentGrouping";
 import {
   isBackdropOverlay,
@@ -121,22 +122,7 @@ export function CreateScheduledTaskDialog({
   const [schedule, setSchedule] = useState<ScheduleModel>(DEFAULT_SCHEDULE_MODEL);
   const [timezone, setTimezone] = useState(localTimezone);
 
-  // ── Agent / harness picker (shared with NewChatDialog) ─────────────────────
-  // The picker's "Harnesses" (Claude Code / Codex / Pi …) and "Agents"
-  // (Polly / Debby / custom) rows are all real AvailableAgents with ids, so a
-  // single `pickedAgentId` covers both cases — for a bare-harness pick it's the
-  // `*-native-ui` agent's id, exactly what the interactive dialog sends.
-  //
-  // Scheduled tasks create sessions from the selected agent. Model + effort are
-  // offered for native coding agents that support them (see `showModelEffort`
-  // below), reusing lightweight scheduled-local pickers rather than the
-  // interactive dialog's 26-prop HarnessConfigModal (bound to smart-routing /
-  // cost-control / per-turn model loading — disproportionate for a saved task).
-  // "" = unselected → `model_override` / `reasoning_effort` / `permission_mode`
-  // are omitted so the fire path uses the agent's configured defaults. Permission
-  // mode is offered for native coding agents that support it (Claude Code); each
-  // fire launches a fresh session, so the whole launch vocabulary is valid —
-  // including the launch-only `dontAsk` / `bypassPermissions`.
+  // Empty overrides use the agent's configured defaults when a run starts.
   const [pickedAgentId, setPickedAgentId] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(true);
   const [pickedModel, setPickedModel] = useState<string>("");
@@ -176,27 +162,13 @@ export function CreateScheduledTaskDialog({
   function handleSelectAgent(agent: AvailableAgent) {
     setPickedAgentId(agent.id);
     setAdvancedOpen(true);
-    // Keep the per-agent settings in step with the pick: they don't transfer
-    // across harnesses (a model id is provider-bound; permission mode is
-    // Claude-only), so a switch drops them, mirroring the server's clear on a
-    // rebind. Landing back on the task's own agent is NOT a switch, so restore
-    // the values the dialog opened with — otherwise re-picking the current agent
-    // (or switching away and back) would wipe them with no rebind to justify it.
+    // Settings belong to their harness. Returning to the edited task's agent
+    // restores its saved values; selecting another agent clears them.
     const backToOriginal = isEdit && agent.id === editingTask?.agentId;
     setPickedModel(backToOriginal ? (editingTask?.modelOverride ?? "") : "");
     setPickedEffort(backToOriginal ? (editingTask?.reasoningEffort ?? "") : "");
     setPickedPermission(backToOriginal ? (editingTask?.permissionMode ?? "") : "");
   }
-
-  // Model + effort are surfaced only for native coding agents that carry the
-  // model/effort surface — the same `permissionMode` capability the interactive
-  // dialog gates its Model/Effort/Permissions block on (Claude Code). Agents
-  // without it (plain SDK agents like Polly, or native harnesses with no
-  // model-picker surface) show no model/effort controls, exactly like
-  // interactive. Resolved from the full agent list so a task bound to an agent
-  // the picker hides still gates on its real capabilities.
-  const modelEffortAgent = agents?.find((a) => a.id === effectiveAgentId);
-  const showModelEffort = nativeAgentHasCapability(modelEffortAgent, "permissionMode");
 
   // ── Nested dropdown dismiss guard ─────────────────────────────────────────
   // The agent picker and host/schedule Selects portal dropdowns OUTSIDE DialogContent.
@@ -356,6 +328,26 @@ export function CreateScheduledTaskDialog({
   const hostOptions = hosts ?? [];
   // The resolved Host for the pinned id, or undefined when none is pinned.
   const selectedHost = hostId === "" ? undefined : hostOptions.find((h) => h.host_id === hostId);
+  const harnessSettings = useScheduledHarnessSettings(
+    agents?.find((agent) => agent.id === effectiveAgentId),
+    selectedHost,
+    sandboxMode,
+    pickedModel,
+    open,
+  );
+  const supportsModel = harnessSettings.supportsModel;
+  const supportsPermission = harnessSettings.permissions.length > 0;
+  const showAdvanced = supportsModel || supportsPermission;
+  function handleModelChange(model: string) {
+    setPickedModel(model);
+    if (
+      pickedEffort &&
+      !harnessSettings.effortsForModel(model).some((option) => option.value === pickedEffort)
+    ) {
+      setPickedEffort("");
+    }
+  }
+
   const workspaceHostOffline = !sandboxMode && selectedHost?.status === "offline";
   useEffect(() => {
     if (workspaceHostOffline) setWorkspaceBrowserOpen(false);
@@ -388,8 +380,8 @@ export function CreateScheduledTaskDialog({
           // or each in its own sandbox.
           placement: sandboxMode ? "managed" : "same_host",
           sessionLink,
-          model: showModelEffort && pickedModel !== "" ? pickedModel : undefined,
-          effort: showModelEffort && pickedEffort !== "" ? pickedEffort : undefined,
+          model: supportsModel && pickedModel !== "" ? pickedModel : undefined,
+          effort: supportsModel && pickedEffort !== "" ? pickedEffort : undefined,
         })
       : "";
   const effectivePrompt = trigger !== null ? renderedTriggerPrompt : prompt;
@@ -403,6 +395,7 @@ export function CreateScheduledTaskDialog({
     (isEdit || sandboxMode || hostId !== "") &&
     !workspaceWithoutHost &&
     !scheduleInvalid &&
+    !harnessSettings.blockedReason &&
     !mutationPending;
 
   function resetForm() {
@@ -431,6 +424,7 @@ export function CreateScheduledTaskDialog({
   }
 
   async function handleSubmit() {
+    if (harnessSettings.blockedReason) return;
     if (!editingTask && effectiveAgentId === null) return;
     setError(null);
     setSubmitting(true);
@@ -465,17 +459,16 @@ export function CreateScheduledTaskDialog({
         resolveProjectId,
       );
       if (editingTask) {
-        // Thread model/effort ONLY when the agent supports them. Each control's
-        // "" (Default) maps to `null` so an update CLEARS a previously-set
-        // override; a non-default pick sends the value. When the agent has no
-        // model/effort surface we send neither key (left untouched server-side).
-        const overrides = showModelEffort
-          ? {
-              modelOverride: pickedModel === "" ? null : pickedModel,
-              reasoningEffort: pickedEffort === "" ? null : pickedEffort,
-              permissionMode: pickedPermission === "" ? null : pickedPermission,
-            }
-          : {};
+        // Explicit null clears an override; unsupported settings stay untouched.
+        const overrides = {
+          ...(supportsModel
+            ? {
+                modelOverride: pickedModel || null,
+                reasoningEffort: pickedEffort || null,
+              }
+            : {}),
+          ...(supportsPermission ? { permissionMode: pickedPermission || null } : {}),
+        };
         await updateMutation.mutateAsync({
           id: editingTask.id,
           input: {
@@ -499,9 +492,9 @@ export function CreateScheduledTaskDialog({
           // Include an override only when the agent supports model/effort AND the
           // user picked a non-default value; an unselected control is omitted so
           // the create uses the agent's configured defaults.
-          ...(showModelEffort && pickedModel !== "" ? { modelOverride: pickedModel } : {}),
-          ...(showModelEffort && pickedEffort !== "" ? { reasoningEffort: pickedEffort } : {}),
-          ...(showModelEffort && pickedPermission !== ""
+          ...(supportsModel && pickedModel !== "" ? { modelOverride: pickedModel } : {}),
+          ...(supportsModel && pickedEffort !== "" ? { reasoningEffort: pickedEffort } : {}),
+          ...(supportsPermission && pickedPermission !== ""
             ? { permissionMode: pickedPermission }
             : {}),
         });
@@ -848,17 +841,24 @@ export function CreateScheduledTaskDialog({
                 Future runs use {agentLabel}; past runs keep the agent they ran with
               </p>
             )}
-            {!showModelEffort && (
+            {!showAdvanced && (
               <p className="text-sm text-muted-foreground">
                 Uses this agent&apos;s default model, effort, and permission settings
               </p>
             )}
           </div>
 
-          {/* Model + reasoning effort + permission mode — only for native
-              coding agents that carry the model/effort surface (Claude Code).
-              Unselected controls fall back to the agent's configured defaults. */}
-          {showModelEffort && (
+          {harnessSettings.blockedReason && (
+            <p
+              role="alert"
+              data-testid="task-harness-unsupported"
+              className="text-sm text-destructive"
+            >
+              {harnessSettings.blockedReason}
+            </p>
+          )}
+          {/* Each harness exposes only the launch settings it supports. */}
+          {showAdvanced && (
             <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
               <CollapsibleTrigger className="group flex cursor-pointer items-center gap-2 rounded-sm py-1 text-muted-foreground text-ui outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50">
                 Advanced
@@ -869,16 +869,16 @@ export function CreateScheduledTaskDialog({
                   model={pickedModel}
                   effort={pickedEffort}
                   permissionMode={pickedPermission}
-                  hostId={hostId}
-                  onModelChange={setPickedModel}
+                  settings={harnessSettings}
+                  onModelChange={handleModelChange}
                   onEffortChange={setPickedEffort}
                   onPermissionModeChange={setPickedPermission}
                   onSelectOpenChange={handleSelectOpenChange}
                 />
                 <p className="mt-1.5 text-sm text-muted-foreground">
                   Leave on Default to use the agent&apos;s configured model, effort, and permission
-                  mode. Automations run unattended, so a prompting mode (Manual or Plan) will wait
-                  for approval that never comes.
+                  mode. Automations run unattended; modes that require approval may pause until you
+                  respond.
                 </p>
               </CollapsibleContent>
             </Collapsible>
