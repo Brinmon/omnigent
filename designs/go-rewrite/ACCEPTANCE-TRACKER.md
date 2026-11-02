@@ -31,10 +31,10 @@
 
 | ID | 判据 | 用例 | 基线 | Go | 证据 | 勾 |
 |---|---|---|---|---|---|---|
-| B1 | SPA 启动 + `/v1/info`/`/v1/me`/`/v1/harnesses` 不降级 | `tests/e2e_ui/chat/test_smoke.py` | ✅ 43s | — | `evidence/B1/` | 🟡 |
-| B2 | 会话列表渲染（sidebar 出历史） | `tests/e2e_ui/sessions/test_sidebar_search.py`、`tests/e2e_ui/sessions/test_sidebar_rename.py` | ✅ 47s | — | `evidence/B2/` | 🟡 |
+| B1 | SPA 启动 + `/v1/info`/`/v1/me`/`/v1/harnesses` 不降级 | 基线 `test_smoke.py`；Go `browser-acceptance.py` boot | ✅ 43s | ✅ | `evidence/B1/` | ✅ |
+| B2 | 会话列表渲染（sidebar 出历史） | 基线 sidebar 套件；Go `browser-acceptance.py` sidebar | ✅ 47s | ✅ | `evidence/B2/` | ✅ |
 | B3 | 历史 hydration（刷新后位置不漂移） | `tests/e2e_ui/chat/test_initial_history_loading.py`、`tests/e2e_ui/chat/test_reload_continue.py` | ✅ 50s | — | `evidence/B3/` | 🟡 |
-| B4 | 发消息 → SSE 流式 → assistant 气泡非空 | `tests/e2e_ui/chat/test_smoke.py::test_send_message_renders_assistant_response` | ✅ 30s | — | `evidence/B4/` | 🟡 |
+| B4 | 发消息 → SSE 流式 → assistant 气泡非空 | 基线 `test_send_message_renders_assistant_response`；Go `browser-acceptance.py` send-message | ✅ 30s | ✅ | `evidence/B4/` | ✅ |
 | B5 | `WS /v1/sessions/updates` 增量（新会话即时出现） | `tests/e2e_ui/sessions/test_session_updates_stream.py` | ✅ 58s | — | `evidence/B5/` | 🟡 |
 
 ---

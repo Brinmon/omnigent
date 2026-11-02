@@ -49,9 +49,12 @@ def build_item_payloads() -> dict[str, dict]:
             call_id="call-fixture-1",
             output="contents of alpha_one.py",
         ).model_dump(mode="json"),
+        # The code must be one the web client knows: it maps a code to a
+        # human-readable description and falls back to "Something went wrong" for
+        # an unknown one, which looks like a defect rather than sample data.
         "error": ErrorData(
             source="llm",
-            code="fixture_error",
+            code="executor_error",
             message="Fixture error payload.",
         ).model_dump(mode="json"),
         "reasoning": ReasoningData(

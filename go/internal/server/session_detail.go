@@ -214,3 +214,140 @@ func agentIDOf(row store.Conversation) string {
 	}
 	return row.AgentID.String()
 }
+
+// ListSessionItemsV1SessionsSessionIdItemsGet implements GET .../items.
+//
+// The client reads the transcript from here rather than from the session detail's
+// “items“ field, so an unimplemented route leaves the session page showing
+// "Conversation not found" even though the session and its rows exist.
+//
+// The response is a PaginatedList whose “data“ holds ConversationItem objects.
+func (s *Server) ListSessionItemsV1SessionsSessionIdItemsGet(
+	w http.ResponseWriter,
+	r *http.Request,
+	sessionID string,
+	params api.ListSessionItemsV1SessionsSessionIdItemsGetParams,
+) {
+	id, err := db.ParseUuid16(sessionID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "Session not found.")
+		return
+	}
+	if _, err := s.queries.GetSession(r.Context(), querySession(s.workspace, id)); err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "Session not found.")
+		return
+	}
+
+	limit := int64(100)
+	if params.Limit != nil {
+		limit = int64(*params.Limit)
+	}
+	rows, err := s.queries.ListItems(r.Context(), store.ListItemsParams{
+		WorkspaceID:    s.workspace,
+		ConversationID: id,
+		PageLimit:      limit,
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error",
+			"could not load the transcript")
+		return
+	}
+
+	items := make([]any, 0, len(rows))
+	for _, row := range rows {
+		view, ok := s.itemView(r, id, row)
+		if !ok {
+			continue
+		}
+		items = append(items, view)
+	}
+
+	object := "list"
+	hasMore := false
+	var firstID, lastID *string
+	if len(items) > 0 {
+		firstItem, _ := items[0].(map[string]any)
+		lastItem, _ := items[len(items)-1].(map[string]any)
+		if id, ok := firstItem["id"].(string); ok {
+			firstID = &id
+		}
+		if id, ok := lastItem["id"].(string); ok {
+			lastID = &id
+		}
+	}
+	writeJSON(w, http.StatusOK, api.PaginatedList{
+		Object:  &object,
+		Data:    &items,
+		FirstId: firstID,
+		LastId:  lastID,
+		HasMore: &hasMore,
+	})
+}
+
+// itemView renders one stored row as the client's item shape.
+//
+// The payload is FLATTENED into the envelope, not nested under "data": the Python
+// server's response puts a compaction's summary and token_count at the top level
+// beside id and type, and the client reads them there. Nesting them leaves the
+// client unable to find the fields it expects.
+//
+// A row whose payload does not decode is skipped rather than sent half-formed,
+// since the client renders each item against its own type.
+func (s *Server) itemView(
+	r *http.Request,
+	conversationID db.Uuid16,
+	row store.ListItemsRow,
+) (map[string]any, bool) {
+	typeName, err := db.DecodeName(db.ItemTypeName, "conversation_items.type", row.Type)
+	if err != nil {
+		return nil, false
+	}
+	statusName, err := db.DecodeName(db.ItemStatusName, "conversation_items.status", row.Status)
+	if err != nil {
+		statusName = "completed"
+	}
+
+	data, err := s.queries.GetItemData(r.Context(), store.GetItemDataParams{
+		WorkspaceID:    s.workspace,
+		ConversationID: conversationID,
+		ID:             row.ID,
+	})
+	if err != nil {
+		return nil, false
+	}
+	payload, err := decodeItemData(typeName, []byte(data.Data))
+	if err != nil {
+		return nil, false
+	}
+	// The union has no generic setter, so the payload is re-marshalled and merged
+	// into the envelope.
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return nil, false
+	}
+	var fields map[string]any
+	if err := json.Unmarshal(encoded, &fields); err != nil {
+		return nil, false
+	}
+
+	view := map[string]any{
+		"id":          row.ID.String(),
+		"response_id": row.ResponseID,
+		"type":        typeName,
+		"status":      statusName,
+		"created_at":  row.CreatedAt,
+	}
+	// The envelope's own fields win over a payload that happens to carry one: id
+	// and type identify the row, and a payload must not be able to rewrite them.
+	for key, value := range fields {
+		switch key {
+		case "id", "type", "status", "created_at", "response_id", "created_by":
+			continue
+		}
+		view[key] = value
+	}
+	if row.CreatedBy != nil {
+		view["created_by"] = *row.CreatedBy
+	}
+	return view, true
+}

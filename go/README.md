@@ -16,7 +16,7 @@ it is the rollback path.
 ## Layout
 
 ```
-cmd/omnigent/        unified entry point (server / runner subcommands)
+cmd/omnigent/        unified entry point (serves the API and the built web client)
 cmd/openapi-diff/    contract comparison, see ../designs/go-rewrite/P0-CONTRACT.md
 internal/api/        generated OpenAPI types and server interface
 internal/db/         on-disk encodings shared with Python (Uuid16, enum codes, CompressedText)

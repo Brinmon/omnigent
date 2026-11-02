@@ -419,11 +419,6 @@ func (s *Server) UpdateCommentV1SessionsSessionIdCommentsCommentIdPatch(w http.R
 	notImplemented(w, "UpdateCommentV1SessionsSessionIdCommentsCommentIdPatch")
 }
 
-// ListSessionItemsV1SessionsSessionIdItemsGet is not implemented in P1.
-func (s *Server) ListSessionItemsV1SessionsSessionIdItemsGet(w http.ResponseWriter, r *http.Request, sessionId string, params api.ListSessionItemsV1SessionsSessionIdItemsGetParams) {
-	notImplemented(w, "ListSessionItemsV1SessionsSessionIdItemsGet")
-}
-
 // GetSessionLabelsV1SessionsSessionIdLabelsGet is not implemented in P1.
 func (s *Server) GetSessionLabelsV1SessionsSessionIdLabelsGet(w http.ResponseWriter, r *http.Request, sessionId string) {
 	notImplemented(w, "GetSessionLabelsV1SessionsSessionIdLabelsGet")

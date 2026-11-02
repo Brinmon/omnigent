@@ -47,6 +47,9 @@ type Server struct {
 	// streamEpoch identifies this process's stream generation so a client that
 	// reconnects after a restart knows its cached snapshot may be stale.
 	streamEpoch string
+	// webRoot is the built web client's directory, or "" for an API-only
+	// deployment.
+	webRoot string
 	// policies gates tool calls and request phases. Nil means nothing is gated,
 	// which is the behaviour a build with no policies configured has.
 	policies *policy.Engine
@@ -96,6 +99,7 @@ func New(conn *sql.DB, version string) *Server {
 		pi:          resolvePiConfig(),
 		activeTurns: make(map[string]context.CancelFunc),
 		policies:    engine,
+		webRoot:     spaDirFromEnv(),
 	}
 }
 
@@ -115,6 +119,19 @@ func (s *Server) Router() http.Handler {
 	router.Get("/v1/sessions/updates", s.handleSessionUpdates)
 	router.Post("/v1/sessions/{session_id}/events", s.PostEventV1SessionsSessionIdEventsPost)
 	api.HandlerFromMux(s, router)
+
+	// The web client is mounted last so every API route above wins the match. A
+	// request for an unimplemented API path therefore 404s as JSON rather than
+	// returning the SPA's HTML, which the client would fail to parse.
+	if spa := spaHandler(s.webRoot); spa != nil {
+		router.NotFound(func(w http.ResponseWriter, r *http.Request) {
+			if isAPIPath(r.URL.Path) {
+				writeError(w, http.StatusNotFound, "not_found", "Not found.")
+				return
+			}
+			spa.ServeHTTP(w, r)
+		})
+	}
 	return router
 }
 
