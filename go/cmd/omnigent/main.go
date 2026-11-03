@@ -26,6 +26,7 @@ import (
 
 	"github.com/Brinmon/omnigent/go/internal/artifact"
 	"github.com/Brinmon/omnigent/go/internal/server"
+	"github.com/Brinmon/omnigent/go/internal/store"
 )
 
 // version is set at build time by goreleaser; the default matches the Python
@@ -135,6 +136,12 @@ func runServe(args []string) error {
 	}
 	if err := conn.Ping(); err != nil {
 		return fmt.Errorf("ping database %s: %w", dbPath, err)
+	}
+	// A fresh database gets its tables here. Without this the server starts, then
+	// fails every query with "no such table", which reads as a broken build rather
+	// than an uninitialised one.
+	if err := store.EnsureSchema(conn); err != nil {
+		return err
 	}
 
 	addr := net.JoinHostPort(*host, fmt.Sprint(*port))

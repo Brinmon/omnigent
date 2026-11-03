@@ -60,8 +60,11 @@ func (r *turnRecorder) addUserMessage(text string) {
 	r.items = append(r.items, pendingItem{
 		itemType: "message",
 		data: map[string]any{
-			"role":    "user",
-			"content": []map[string]any{{"type": "text", "text": text}},
+			"role": "user",
+			// input_text, not text: the client filters user bubbles with
+			// isTextBlock, which accepts only input_text, so any other type renders
+			// as an empty bubble.
+			"content": []map[string]any{{"type": "input_text", "text": text}},
 		},
 		search:    text,
 		createdAt: time.Now().Unix(),
@@ -121,8 +124,9 @@ func (r *turnRecorder) addAssistantMessage(text, model string) {
 	r.items = append(r.items, pendingItem{
 		itemType: "message",
 		data: map[string]any{
-			"role":    "assistant",
-			"content": []map[string]any{{"type": "text", "text": text}},
+			"role": "assistant",
+			// output_text for an assistant reply; the counterpart to input_text.
+			"content": []map[string]any{{"type": "output_text", "text": text}},
 			"model":   model,
 		},
 		search:    text,

@@ -308,3 +308,28 @@ func childSessionID(t *testing.T) string {
 	}
 	return id
 }
+
+// A second start must not fail: the schema is applied on every boot, so creating
+// an existing table is the normal case rather than an error.
+func TestEnsureSchemaIsIdempotent(t *testing.T) {
+	dir := t.TempDir()
+	conn, err := sql.Open("sqlite", "file:"+filepath.Join(dir, "fresh.db"))
+	if err != nil {
+		t.Fatalf("open fresh database: %v", err)
+	}
+	defer func() { _ = conn.Close() }()
+	for attempt := 1; attempt <= 3; attempt++ {
+		if err := store.EnsureSchema(conn); err != nil {
+			t.Fatalf("EnsureSchema attempt %d: %v", attempt, err)
+		}
+	}
+
+	var tables int
+	if err := conn.QueryRow(
+		`SELECT COUNT(*) FROM sqlite_master WHERE type='table'`).Scan(&tables); err != nil {
+		t.Fatalf("count tables: %v", err)
+	}
+	if tables < 10 {
+		t.Fatalf("only %d tables exist; the schema did not apply", tables)
+	}
+}

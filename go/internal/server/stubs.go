@@ -54,11 +54,6 @@ func (s *Server) BrandingLogoV1BrandingLogoVariantGet(w http.ResponseWriter, r *
 	notImplemented(w, "BrandingLogoV1BrandingLogoVariantGet")
 }
 
-// ListExtensionsV1ExtensionsGet is not implemented in P1.
-func (s *Server) ListExtensionsV1ExtensionsGet(w http.ResponseWriter, r *http.Request) {
-	notImplemented(w, "ListExtensionsV1ExtensionsGet")
-}
-
 // ExtensionDiagnosticsV1ExtensionsDiagnosticsGet is not implemented in P1.
 func (s *Server) ExtensionDiagnosticsV1ExtensionsDiagnosticsGet(w http.ResponseWriter, r *http.Request) {
 	notImplemented(w, "ExtensionDiagnosticsV1ExtensionsDiagnosticsGet")
@@ -72,11 +67,6 @@ func (s *Server) GetExtensionV1ExtensionsExtensionIdGet(w http.ResponseWriter, r
 // GetExtensionAssetV1ExtensionsExtensionIdAssetsDigestAssetNameGet is not implemented in P1.
 func (s *Server) GetExtensionAssetV1ExtensionsExtensionIdAssetsDigestAssetNameGet(w http.ResponseWriter, r *http.Request, extensionId string, digest string, assetName string) {
 	notImplemented(w, "GetExtensionAssetV1ExtensionsExtensionIdAssetsDigestAssetNameGet")
-}
-
-// ListHostsV1HostsGet is not implemented in P1.
-func (s *Server) ListHostsV1HostsGet(w http.ResponseWriter, r *http.Request) {
-	notImplemented(w, "ListHostsV1HostsGet")
 }
 
 // GetHostV1HostsHostIdGet is not implemented in P1.
@@ -239,19 +229,9 @@ func (s *Server) ListRegistryV1PolicyRegistryGet(w http.ResponseWriter, r *http.
 	notImplemented(w, "ListRegistryV1PolicyRegistryGet")
 }
 
-// ListProjectsV1ProjectsGet is not implemented in P1.
-func (s *Server) ListProjectsV1ProjectsGet(w http.ResponseWriter, r *http.Request) {
-	notImplemented(w, "ListProjectsV1ProjectsGet")
-}
-
 // CreateProjectV1ProjectsPost is not implemented in P1.
 func (s *Server) CreateProjectV1ProjectsPost(w http.ResponseWriter, r *http.Request) {
 	notImplemented(w, "CreateProjectV1ProjectsPost")
-}
-
-// GetProjectOrderV1ProjectsOrderGet is not implemented in P1.
-func (s *Server) GetProjectOrderV1ProjectsOrderGet(w http.ResponseWriter, r *http.Request) {
-	notImplemented(w, "GetProjectOrderV1ProjectsOrderGet")
 }
 
 // SaveProjectOrderV1ProjectsOrderPut is not implemented in P1.
@@ -297,11 +277,6 @@ func (s *Server) ListProfilesV1SandboxProfilesGet(w http.ResponseWriter, r *http
 // ModelOptionsV1SandboxProvidersProviderHarnessesHarnessModelOptionsGet is not implemented in P1.
 func (s *Server) ModelOptionsV1SandboxProvidersProviderHarnessesHarnessModelOptionsGet(w http.ResponseWriter, r *http.Request, provider string, harness string, params api.ModelOptionsV1SandboxProvidersProviderHarnessesHarnessModelOptionsGetParams) {
 	notImplemented(w, "ModelOptionsV1SandboxProvidersProviderHarnessesHarnessModelOptionsGet")
-}
-
-// ListSessionProjectsV1SessionsProjectsGet is not implemented in P1.
-func (s *Server) ListSessionProjectsV1SessionsProjectsGet(w http.ResponseWriter, r *http.Request) {
-	notImplemented(w, "ListSessionProjectsV1SessionsProjectsGet")
 }
 
 // DeleteSessionV1SessionsSessionIdDelete is not implemented in P1.

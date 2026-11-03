@@ -85,6 +85,30 @@ func TestTurnPersistsTranscript(t *testing.T) {
 	if model, _ := assistantData["model"].(string); model == "" {
 		t.Error("stored assistant message has no model id")
 	}
+
+	// The content part type is not decoration: the client filters user bubbles
+	// with isTextBlock, which accepts only input_text, and renders anything else
+	// as an empty bubble. Storing "text" produced exactly that -- correct rows,
+	// blank page -- so the type is asserted here rather than inferred from the
+	// text being present.
+	if got := firstContentType(userItem); got != "input_text" {
+		t.Errorf("stored user content type = %q, want input_text", got)
+	}
+	if got := firstContentType(assistantItem); got != "output_text" {
+		t.Errorf("stored assistant content type = %q, want output_text", got)
+	}
+}
+
+// firstContentType returns the type of the first content part of a message item.
+func firstContentType(item map[string]any) string {
+	data := itemData(item)
+	parts, _ := data["content"].([]any)
+	if len(parts) == 0 {
+		return ""
+	}
+	first, _ := parts[0].(map[string]any)
+	partType, _ := first["type"].(string)
+	return partType
 }
 
 // TestTurnRowsShareAResponseID checks the pairing key: the client groups a reply
