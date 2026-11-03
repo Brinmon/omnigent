@@ -136,6 +136,13 @@ func (s *Server) Router() http.Handler {
 	// match; HandlerFromMux would otherwise answer the upgrade with 426.
 	router.Get("/v1/sessions/updates", s.handleSessionUpdates)
 	router.Post("/v1/sessions/{session_id}/events", s.PostEventV1SessionsSessionIdEventsPost)
+
+	// The filesystem route takes a multi-segment path (a Windows path arrives as
+	// "C%3A/Users/me"), which the generated single-segment {path} cannot match.
+	// openapi.json declares it as {path} while the Python route is {path:path};
+	// the wildcard is registered here, before the generated routes, so it wins.
+	router.Get("/v1/hosts/{host_id}/filesystem/*", s.listHostFilesystemPath)
+
 	api.HandlerFromMux(s, router)
 
 	// The web client is mounted last so every API route above wins the match. A

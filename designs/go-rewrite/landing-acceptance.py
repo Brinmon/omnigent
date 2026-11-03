@@ -113,6 +113,41 @@ def main(argv: list[str] | None = None) -> int:
             # placeholder instead of a name.
             return f"agent: {label.splitlines()[0][:40]}"
 
+        def f2b_workspace_picker_lists_directories() -> str:
+            # The picker is how a user chooses where the agent runs. It failed
+            # with "C:/Users/me doesn't exist on this host" while the route took
+            # an absolute path and the generated single-segment {path} could not
+            # match it -- so the listing was empty for every Windows user.
+            page.locator("[data-testid='new-chat-landing-workspace-chip']").click()
+            page.wait_for_selector(
+                "[data-testid='new-chat-landing-workspace-open-folder']", timeout=20_000
+            )
+            page.locator("[data-testid='new-chat-landing-workspace-open-folder']").click()
+            dialog = page.locator("[role='dialog']").first
+            dialog.wait_for(timeout=20_000)
+            time.sleep(3)
+
+            text = dialog.inner_text()
+            if "doesn't exist" in text:
+                raise AssertionError(
+                    "the picker reports the home directory as missing"
+                )
+            # A listing shows entries beside the Cancel/Confirm pair; a failed one
+            # shows only the heading and the buttons.
+            entries = [
+                line for line in text.splitlines()
+                if line.strip() and line.strip() not in
+                {"Select working directory", "Choose a folder for the new session.",
+                 "Cancel", "Confirm"}
+            ]
+            if len(entries) < 3:
+                raise AssertionError(
+                    f"the picker listed {len(entries)} entries: {entries[:5]}"
+                )
+            page.keyboard.press("Escape")
+            time.sleep(1)
+            return f"{len(entries)} entries listed"
+
         def f3_send_enables_after_typing() -> str:
             box = page.locator("[data-testid='new-chat-landing-input']")
             box.fill(PROMPT)
@@ -209,11 +244,12 @@ def main(argv: list[str] | None = None) -> int:
 
         if step("F1 host selected", f1_lands_without_host_warning):
             if step("F2 agent available", f2_agent_is_available):
-                if step("F3 send enables", f3_send_enables_after_typing):
-                    if step("F4 session starts", f4_send_starts_a_session):
-                        if step("F5 prompt shown", f5_prompt_is_rendered):
-                            if step("F6 reply arrives", f6_reply_arrives):
-                                step("F7 reload keeps history", f7_reload_keeps_history)
+                if step("F2b workspace picker", f2b_workspace_picker_lists_directories):
+                    if step("F3 send enables", f3_send_enables_after_typing):
+                        if step("F4 session starts", f4_send_starts_a_session):
+                            if step("F5 prompt shown", f5_prompt_is_rendered):
+                                if step("F6 reply arrives", f6_reply_arrives):
+                                    step("F7 reload keeps history", f7_reload_keeps_history)
         step("F8 landing console clean", f8_landing_console_is_clean)
         if created.get("id"):
             step("F9 session page clean", f9_session_page_has_no_501)
