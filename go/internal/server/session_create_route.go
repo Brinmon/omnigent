@@ -130,6 +130,10 @@ func (s *Server) createSessionFromJSON(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		AgentID string `json:"agent_id"`
 		Title   string `json:"title"`
+		// Labels carry the client's create token, which is how it recognises the
+		// session it just asked for. Dropping them leaves the client waiting for a
+		// row it can never match, and the URL stays on the optimistic temp id.
+		Labels map[string]string `json:"labels"`
 	}
 	decoder := json.NewDecoder(io.LimitReader(r.Body, 1<<20))
 	if err := decoder.Decode(&body); err != nil {
@@ -162,7 +166,7 @@ func (s *Server) createSessionFromJSON(w http.ResponseWriter, r *http.Request) {
 
 	surface := clientSurfaceOf(r.Header.Get("X-Omnigent-Client"))
 	sessionID, err := s.createSessionForAgent(
-		r.Context(), agentID, agent.Name, body.Title, surface)
+		r.Context(), agentID, agent.Name, body.Title, surface, body.Labels)
 	if err != nil {
 		slog.Error("create session for agent", "error", err, "agent", body.AgentID)
 		writeError(w, http.StatusInternalServerError, "internal_error",

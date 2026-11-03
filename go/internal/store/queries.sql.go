@@ -594,6 +594,62 @@ func (q *Queries) ListAgentsOwnedBy(ctx context.Context, arg ListAgentsOwnedByPa
 	return items, nil
 }
 
+const listHosts = `-- name: ListHosts :many
+SELECT host_id, user_id, name, status, created_at, updated_at,
+       sandbox_provider, configured_harnesses
+FROM hosts
+WHERE workspace_id = ? AND user_id = ? AND deleted_at IS NULL
+ORDER BY created_at, host_id
+`
+
+type ListHostsParams struct {
+	WorkspaceID int64
+	UserID      string
+}
+
+type ListHostsRow struct {
+	HostID              []byte
+	UserID              string
+	Name                string
+	Status              int64
+	CreatedAt           *int64
+	UpdatedAt           *int64
+	SandboxProvider     *string
+	ConfiguredHarnesses []byte
+}
+
+func (q *Queries) ListHosts(ctx context.Context, arg ListHostsParams) ([]ListHostsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listHosts, arg.WorkspaceID, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListHostsRow
+	for rows.Next() {
+		var i ListHostsRow
+		if err := rows.Scan(
+			&i.HostID,
+			&i.UserID,
+			&i.Name,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.SandboxProvider,
+			&i.ConfiguredHarnesses,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listItems = `-- name: ListItems :many
 SELECT id, conversation_id, response_id, created_at, position, type, status,
        created_by
@@ -840,6 +896,43 @@ func (q *Queries) UpdateSessionTitle(ctx context.Context, arg UpdateSessionTitle
 	return err
 }
 
+const upsertBuiltinAgent = `-- name: UpsertBuiltinAgent :exec
+INSERT INTO agents (
+    workspace_id, id, created_at, name, bundle_location, version, kind, created_by
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (workspace_id, id) DO UPDATE SET
+    name = excluded.name,
+    bundle_location = excluded.bundle_location,
+    version = excluded.version
+`
+
+type UpsertBuiltinAgentParams struct {
+	WorkspaceID    int64
+	ID             db.Uuid16
+	CreatedAt      int64
+	Name           string
+	BundleLocation string
+	Version        int64
+	Kind           int64
+	CreatedBy      *string
+}
+
+// The packaged agent is installed on every start, so a second run must refresh
+// the existing row rather than fail on the primary key.
+func (q *Queries) UpsertBuiltinAgent(ctx context.Context, arg UpsertBuiltinAgentParams) error {
+	_, err := q.db.ExecContext(ctx, upsertBuiltinAgent,
+		arg.WorkspaceID,
+		arg.ID,
+		arg.CreatedAt,
+		arg.Name,
+		arg.BundleLocation,
+		arg.Version,
+		arg.Kind,
+		arg.CreatedBy,
+	)
+	return err
+}
+
 const upsertLabel = `-- name: UpsertLabel :exec
 INSERT INTO conversation_labels (workspace_id, conversation_id, key, value, updated_at)
 VALUES (?, ?, ?, ?, ?)
@@ -862,6 +955,46 @@ func (q *Queries) UpsertLabel(ctx context.Context, arg UpsertLabelParams) error 
 		arg.Key,
 		arg.Value,
 		arg.UpdatedAt,
+	)
+	return err
+}
+
+const upsertLocalHost = `-- name: UpsertLocalHost :exec
+INSERT INTO hosts (
+    workspace_id, host_id, user_id, name, status, created_at, updated_at,
+    configured_harnesses
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (workspace_id, host_id) DO UPDATE SET
+    status = excluded.status,
+    updated_at = excluded.updated_at,
+    configured_harnesses = excluded.configured_harnesses,
+    deleted_at = NULL
+`
+
+type UpsertLocalHostParams struct {
+	WorkspaceID         int64
+	HostID              []byte
+	UserID              string
+	Name                string
+	Status              int64
+	CreatedAt           *int64
+	UpdatedAt           *int64
+	ConfiguredHarnesses []byte
+}
+
+// The local host is registered on every start so the client always has an
+// execution target. The name and harness map are refreshed; created_at is left
+// alone because the row represents the same machine across restarts.
+func (q *Queries) UpsertLocalHost(ctx context.Context, arg UpsertLocalHostParams) error {
+	_, err := q.db.ExecContext(ctx, upsertLocalHost,
+		arg.WorkspaceID,
+		arg.HostID,
+		arg.UserID,
+		arg.Name,
+		arg.Status,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+		arg.ConfiguredHarnesses,
 	)
 	return err
 }

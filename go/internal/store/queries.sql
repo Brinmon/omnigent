@@ -209,3 +209,35 @@ WHERE workspace_id = sqlc.arg('workspace_id')
   AND created_by = sqlc.arg('created_by')
 ORDER BY created_at DESC, id DESC
 LIMIT sqlc.arg('page_limit');
+
+-- name: UpsertLocalHost :exec
+-- The local host is registered on every start so the client always has an
+-- execution target. The name and harness map are refreshed; created_at is left
+-- alone because the row represents the same machine across restarts.
+INSERT INTO hosts (
+    workspace_id, host_id, user_id, name, status, created_at, updated_at,
+    configured_harnesses
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (workspace_id, host_id) DO UPDATE SET
+    status = excluded.status,
+    updated_at = excluded.updated_at,
+    configured_harnesses = excluded.configured_harnesses,
+    deleted_at = NULL;
+
+-- name: ListHosts :many
+SELECT host_id, user_id, name, status, created_at, updated_at,
+       sandbox_provider, configured_harnesses
+FROM hosts
+WHERE workspace_id = ? AND user_id = ? AND deleted_at IS NULL
+ORDER BY created_at, host_id;
+
+-- name: UpsertBuiltinAgent :exec
+-- The packaged agent is installed on every start, so a second run must refresh
+-- the existing row rather than fail on the primary key.
+INSERT INTO agents (
+    workspace_id, id, created_at, name, bundle_location, version, kind, created_by
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (workspace_id, id) DO UPDATE SET
+    name = excluded.name,
+    bundle_location = excluded.bundle_location,
+    version = excluded.version;

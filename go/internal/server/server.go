@@ -245,6 +245,26 @@ func (s *Server) ListSessionsV1SessionsGet(
 
 // ── helpers ───────────────────────────────────────────────────────────────
 
+// sessionLabels reads the stored labels for a session.
+//
+// A read failure is logged and treated as "no labels" rather than failing the
+// whole list: one session with an unreadable label row must not hide the others.
+func (s *Server) sessionLabels(ctx context.Context, id db.Uuid16) map[string]string {
+	rows, err := s.queries.ListLabels(ctx, store.ListLabelsParams{
+		WorkspaceID:    s.workspace,
+		ConversationID: id[:],
+	})
+	if err != nil {
+		slog.Warn("read session labels", "session", id.String(), "error", err)
+		return map[string]string{}
+	}
+	labels := make(map[string]string, len(rows))
+	for _, row := range rows {
+		labels[row.Key] = row.Value
+	}
+	return labels
+}
+
 // sessionListItem renders one stored row as the API's SessionListItem.
 //
 // Ids go out as bare 32-char hex and timestamps as Unix epoch seconds, which is
@@ -274,7 +294,10 @@ func (s *Server) sessionListItemFor(ctx context.Context, row store.Conversation)
 	owner := s.userID
 	permissionLevel := int64(levelOwner)
 	unread := false
-	labels := map[string]string{}
+	// Labels are stored per session, and the client reads them: its create token
+	// is what lets it match a session it just asked for, so filling this with an
+	// empty map leaves the optimistic temp id unreplaced forever.
+	labels := s.sessionLabels(ctx, row.ID)
 	title := row.Title
 	status := api.SessionListItemStatusIdle
 

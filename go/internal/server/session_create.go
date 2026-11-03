@@ -97,6 +97,37 @@ func (s *Server) createSessionFromBundle(
 	return createdSession{SessionID: sessionID, AgentID: agentID, AgentName: spec.Name}, nil
 }
 
+// insertLabels records the labels a create carried, plus the client surface.
+//
+// The client's create token lives here and is how it matches the session it just
+// requested against the list it re-fetches; without it the optimistic temp id is
+// never replaced by the real one.
+func (s *Server) insertLabels(ctx context.Context, q *store.Queries, sessionID db.Uuid16,
+	labels map[string]string, clientSurface string) error {
+	merged := make(map[string]string, len(labels)+1)
+	for key, value := range labels {
+		merged[key] = value
+	}
+	if _, present := merged["omnigent.client_surface"]; !present {
+		merged["omnigent.client_surface"] = clientSurface
+	}
+
+	now := time.Now().Unix()
+	for key, value := range merged {
+		err := q.UpsertLabel(ctx, store.UpsertLabelParams{
+			WorkspaceID:    s.workspace,
+			ConversationID: sessionID[:],
+			Key:            key,
+			Value:          value,
+			UpdatedAt:      now,
+		})
+		if err != nil {
+			return fmt.Errorf("record label %q: %w", key, err)
+		}
+	}
+	return nil
+}
+
 // createSessionForAgent creates a session bound to an existing agent.
 //
 // It writes the same three companion rows as the bundled path (session,
@@ -105,6 +136,7 @@ func (s *Server) createSessionFromBundle(
 // one of them is tested for.
 func (s *Server) createSessionForAgent(
 	ctx context.Context, agentID db.Uuid16, agentName, title, clientSurface string,
+	labels map[string]string,
 ) (db.Uuid16, error) {
 	sessionUUID, err := newUuid16()
 	if err != nil {
@@ -128,6 +160,9 @@ func (s *Server) createSessionForAgent(
 		return db.Uuid16{}, err
 	}
 	if err := createSessionMetadata(ctx, queries, sessionUUID); err != nil {
+		return db.Uuid16{}, err
+	}
+	if err := s.insertLabels(ctx, queries, sessionUUID, labels, clientSurface); err != nil {
 		return db.Uuid16{}, err
 	}
 	if err := tx.Commit(); err != nil {

@@ -144,10 +144,22 @@ func runServe(args []string) error {
 		return err
 	}
 
+	api := server.New(conn, version, options...)
+	// Register this machine as an execution target before serving: the client's
+	// new-session composer stays disabled until a host is available, and a first
+	// request can arrive before any lazy registration would run.
+	if err := api.RegisterLocalHost(context.Background()); err != nil {
+		return fmt.Errorf("register the local host: %w", err)
+	}
+	// The picker needs both a host and an agent before it can start a session.
+	if err := api.SeedBuiltinAgents(context.Background()); err != nil {
+		return fmt.Errorf("install the packaged agents: %w", err)
+	}
+
 	addr := net.JoinHostPort(*host, fmt.Sprint(*port))
 	httpServer := &http.Server{
 		Addr:              addr,
-		Handler:           server.New(conn, version, options...).Router(),
+		Handler:           api.Router(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

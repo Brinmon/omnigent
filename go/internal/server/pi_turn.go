@@ -38,6 +38,15 @@ type piConfig struct {
 	reason string
 }
 
+// available reports whether this host can actually run the pi harness.
+//
+// The picker reads this before offering the host, so reporting true for a machine
+// with no Pi install would produce a session that fails on its first turn instead
+// of a clear "this host cannot run pi".
+func (c piConfig) available() bool {
+	return len(c.entry) > 0 && c.reason == ""
+}
+
 // resolvePiConfig finds Pi without failing the server: a build with no Pi
 // installed still serves the read API and reports why a turn cannot run.
 func resolvePiConfig() piConfig {

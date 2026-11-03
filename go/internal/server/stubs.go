@@ -89,16 +89,6 @@ func (s *Server) CreateHostDirectoryV1HostsHostIdDirectoriesPost(w http.Response
 	notImplemented(w, "CreateHostDirectoryV1HostsHostIdDirectoriesPost")
 }
 
-// ListHostFilesystemRootV1HostsHostIdFilesystemGet is not implemented in P1.
-func (s *Server) ListHostFilesystemRootV1HostsHostIdFilesystemGet(w http.ResponseWriter, r *http.Request, hostId string, params api.ListHostFilesystemRootV1HostsHostIdFilesystemGetParams) {
-	notImplemented(w, "ListHostFilesystemRootV1HostsHostIdFilesystemGet")
-}
-
-// ListHostFilesystemV1HostsHostIdFilesystemPathGet is not implemented in P1.
-func (s *Server) ListHostFilesystemV1HostsHostIdFilesystemPathGet(w http.ResponseWriter, r *http.Request, hostId string, path string, params api.ListHostFilesystemV1HostsHostIdFilesystemPathGetParams) {
-	notImplemented(w, "ListHostFilesystemV1HostsHostIdFilesystemPathGet")
-}
-
 // RefreshHostHarnessAccountsV1HostsHostIdHarnessesAccountsRefreshPost is not implemented in P1.
 func (s *Server) RefreshHostHarnessAccountsV1HostsHostIdHarnessesAccountsRefreshPost(w http.ResponseWriter, r *http.Request, hostId string) {
 	notImplemented(w, "RefreshHostHarnessAccountsV1HostsHostIdHarnessesAccountsRefreshPost")
@@ -172,11 +162,6 @@ func (s *Server) GetPluginsV1HostsHostIdPluginsGet(w http.ResponseWriter, r *htt
 // LaunchRunnerV1HostsHostIdRunnersPost is not implemented in P1.
 func (s *Server) LaunchRunnerV1HostsHostIdRunnersPost(w http.ResponseWriter, r *http.Request, hostId string) {
 	notImplemented(w, "LaunchRunnerV1HostsHostIdRunnersPost")
-}
-
-// ListHostWorktreesV1HostsHostIdWorktreesGet is not implemented in P1.
-func (s *Server) ListHostWorktreesV1HostsHostIdWorktreesGet(w http.ResponseWriter, r *http.Request, hostId string, params api.ListHostWorktreesV1HostsHostIdWorktreesGetParams) {
-	notImplemented(w, "ListHostWorktreesV1HostsHostIdWorktreesGet")
 }
 
 // ImportSessionV1ImportsPost is not implemented in P1.
@@ -697,11 +682,6 @@ func (s *Server) GetSharingV1SharingGet(w http.ResponseWriter, r *http.Request) 
 // SetSharingV1SharingPut is not implemented in P1.
 func (s *Server) SetSharingV1SharingPut(w http.ResponseWriter, r *http.Request) {
 	notImplemented(w, "SetSharingV1SharingPut")
-}
-
-// GetSkillsV1SkillsGet is not implemented in P1.
-func (s *Server) GetSkillsV1SkillsGet(w http.ResponseWriter, r *http.Request, params api.GetSkillsV1SkillsGetParams) {
-	notImplemented(w, "GetSkillsV1SkillsGet")
 }
 
 // GetUsageV1UsageGet is not implemented in P1.
