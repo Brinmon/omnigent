@@ -4,13 +4,13 @@
 
 ## 当前状态（一行）
 
-Go 版能打开已有会话聊天；**不能新建会话**。下一步是 R1（会话创建），
-见 [R-PLAN-SESSIONS.md](./R-PLAN-SESSIONS.md)。
+Go 版**能新建会话并聊天**（R1 完成，A8/A9/A10/A11 全绿，浏览器 8 步全绿）。
+下一步是 R2（会话管理），见 [R-PLAN-SESSIONS.md](./R-PLAN-SESSIONS.md)。
 
 ## 立刻要做的
 
 ```
-A8/A9 → R1.1 → R1.2 → R1.3 → R1.4 → R1.5 → R1.6 → B6/B7/B8
+R2: PATCH / DELETE / GET hosts / GET projects / POST /v1/agents
 ```
 
 计划和验收全在 **[R-PLAN-SESSIONS.md](./R-PLAN-SESSIONS.md)**，含：
@@ -25,7 +25,8 @@ A8/A9 → R1.1 → R1.2 → R1.3 → R1.4 → R1.5 → R1.6 → B6/B7/B8
 ### 计划与架构（先读）
 | 文件 | 内容 |
 |---|---|
-| **[R-PLAN-SESSIONS.md](./R-PLAN-SESSIONS.md)** | **当前计划 + 验收，从这里继续** |
+| [R1-SESSION-CREATE.md](./R1-SESSION-CREATE.md) | **R1 完成记录：契约、4 个真缺陷、UI 门槛** |
+| **[R-PLAN-SESSIONS.md](./R-PLAN-SESSIONS.md)** | **R1–R4 总计划 + 验收** |
 | [01-current-architecture.md](./01-current-architecture.md) | Python 版架构梳理（211 行） |
 | [02-go-refactor-plan.md](./02-go-refactor-plan.md) | Go 重构总体方案 + 库选型 |
 | [03-acceptance-plan.md](./03-acceptance-plan.md) | 验收方法论（三层 × 32 条 ID） |
@@ -62,6 +63,9 @@ A8/A9 → R1.1 → R1.2 → R1.3 → R1.4 → R1.5 → R1.6 → B6/B7/B8
 | `capability-probe.py` | 探测哪些端点还是 501 |
 | `bisect-items.py` | 二分定位哪个 item 让前端崩 |
 | `capture-create-session.py` | 重新抓创建会话契约 |
+| `compare-create.py` | A8/A9/A11 双后端对拍 |
+| `probe-start-button.py` | 按钮为什么 disabled |
+| `probe-new-session.py` | 客户端建会话时发了什么 |
 | `make-reference-db.py` | 重建 fixture |
 | `probe-pi-rpc.py` / `capture-sse.py` | 抓 Pi / SSE 协议 |
 
@@ -105,7 +109,8 @@ export OMNIGENT_PI_MODEL=openai/deepseek-v4.1-flash
 | C1/C2/C4 Pi 与工具桥 | ✅ |
 | D1/D2 策略 | 🟡 DENY 生效，ASK 卡片待做 |
 | E3 刷新去重 | ✅ |
-| **B6/B7/B8 新建会话** | ⬜ **下一步** |
+| **B6/B7/B8 新建会话** | ✅ |
+| A8–A11 创建契约 | ✅ |
 | E1/E2/E6 管理/fork | ⬜ R2/R3 |
 
 ## 已知缺口（诚实清单）
@@ -113,5 +118,6 @@ export OMNIGENT_PI_MODEL=openai/deepseek-v4.1-flash
 - **无 runner 进程** — server 直接 spawn Pi。session 不能跨 server 存活。
 - **`ASK` 只是「带理由的阻断」** — Pi 的 `tool_call` 钩子无法暂停等人工。
 - **无 sub-agent** — 三层都缺：能力声明 false、工具桥无 spawn 工具、无子会话创建。
-- **`POST/PATCH/DELETE /v1/sessions`、fork、hosts、projects 全是 501** — R1–R3 的内容。
+- **内置 agent seeding 没做** — Python 启动时种 17 个打包 agent，Go 版看不到 jcode/debby/polly。
+- **`PATCH`/`DELETE`/fork/hosts/projects/extensions/`POST /v1/agents` 仍是 501** — R2/R3 的内容。
 - **浏览器验收只有 5 步** — B1–E5 全矩阵还需逐条做。

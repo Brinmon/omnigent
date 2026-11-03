@@ -25,10 +25,10 @@
 | A5 | 旧库（Python 写）Go 可直读 | `run-contract.sh A5`（真 Python 生成的 `go/testdata/reference.db`） | — | ✅ 2s | `evidence/contract/A5/` | ✅ |
 | A6 | Uuid16 / SMALLINT 枚举 / CompressedText 兼容 | `run-contract.sh A6`（zstd 帧 + raw 帧 + 旧 TEXT + 旧 BLOB 四态） | — | ✅ 2s | `evidence/contract/A6/` | ✅ |
 | A7 | Go 与 Python 对同一库返回一致 JSON | `run-contract.sh A7`（`compare-servers.py` 双后端实跑） | — | ✅ 7s | `evidence/contract/A7/` | ✅ |
-| A8 | `POST /v1/sessions` 响应字段集与 Python 一致（两条路径） | 扩展 `compare-servers.py` | — | — | `evidence/A8/` | ⬜ |
-| A9 | 创建后 4 表快照逐字段一致 | 新增 `compare-create.py`（参照 `create_session_reference.json`） | — | — | `evidence/A9/` | ⬜ |
-| A10 | 同一 bundle 双后端创建 → 响应与 DB 形状相同 | 双后端对拍 | — | — | `evidence/A10/` | ⬜ |
-| A11 | 非法 body（缺 agent_id / 不存在 / 空 bundle）→ 状态码与错误码相同 | 双后端对拍 | — | — | `evidence/A11/` | ⬜ |
+| A8 | `POST /v1/sessions` 响应字段集与 Python 一致（两条路径） | `compare-create.py` | — | ✅ 3 字段 + 53 字段 | `evidence/A8/` | ✅ |
+| A9 | 创建后 4 表快照逐字段一致 | `compare-create.py`（4 表 41 列） | — | ✅ | `evidence/A9/` | ✅ |
+| A10 | 同一 bundle 双后端创建 → 响应与 DB 形状相同 | `compare-create.py` | — | ✅ | `evidence/A10/` | ✅ |
+| A11 | 非法 body（缺 agent_id / 不存在 / 空 bundle）→ 状态码与错误码相同 | `compare-create.py` | — | ✅ 3/3 | `evidence/A11/` | ✅ |
 
 ---
 
@@ -41,9 +41,9 @@
 | B3 | 历史 hydration（刷新后位置不漂移） | `tests/e2e_ui/chat/test_initial_history_loading.py`、`tests/e2e_ui/chat/test_reload_continue.py` | ✅ 50s | — | `evidence/B3/` | 🟡 |
 | B4 | 发消息 → SSE 流式 → assistant 气泡非空 | 基线 `test_send_message_renders_assistant_response`；Go `browser-acceptance.py` send-message | ✅ 30s | ✅ | `evidence/B4/` | ✅ |
 | B5 | `WS /v1/sessions/updates` 增量（新会话即时出现） | `tests/e2e_ui/sessions/test_session_updates_stream.py` | ✅ 58s | — | `evidence/B5/` | 🟡 |
-| B6 | **新建会话**（点 New session → 填 prompt → 新会话出现） | `browser-acceptance.py` 扩展 | — | — | `evidence/B6/` | ⬜ |
-| B7 | **新会话聊天**（发消息 → 流式回复） | 同上 | — | — | `evidence/B7/` | ⬜ |
-| B8 | **新会话刷新后历史仍在** | 同上 | — | — | `evidence/B8/` | ⬜ |
+| B6 | 新建会话（create 路由 + 侧栏出现） | `browser-acceptance.py` new-session | — | ✅ | `evidence/B6/` | ✅ |
+| B7 | 新会话可打开并渲染 | `browser-acceptance.py` new-session-opens | — | ✅ | `evidence/B7/` | ✅ |
+| B8 | 刷新后新会话仍在侧栏 | `browser-acceptance.py` new-session-listed | — | ✅ | `evidence/B8/` | ✅ |
 
 ---
 

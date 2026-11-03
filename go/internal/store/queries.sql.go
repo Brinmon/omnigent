@@ -179,6 +179,22 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 	return err
 }
 
+const createSessionMetadata = `-- name: CreateSessionMetadata :exec
+INSERT INTO omnigent_conversation_metadata (workspace_id, id, kind)
+VALUES (?, ?, ?)
+`
+
+type CreateSessionMetadataParams struct {
+	WorkspaceID int64
+	ID          db.Uuid16
+	Kind        int64
+}
+
+func (q *Queries) CreateSessionMetadata(ctx context.Context, arg CreateSessionMetadataParams) error {
+	_, err := q.db.ExecContext(ctx, createSessionMetadata, arg.WorkspaceID, arg.ID, arg.Kind)
+	return err
+}
+
 const deleteLabel = `-- name: DeleteLabel :exec
 DELETE FROM conversation_labels
 WHERE workspace_id = ? AND conversation_id = ? AND key = ?
@@ -390,6 +406,64 @@ func (q *Queries) GetSessionMetadata(ctx context.Context, arg GetSessionMetadata
 	return i, err
 }
 
+const grantSessionPermission = `-- name: GrantSessionPermission :exec
+INSERT INTO session_permissions (user_id, conversation_id, level, workspace_id)
+VALUES (?, ?, ?, ?)
+`
+
+type GrantSessionPermissionParams struct {
+	UserID         string
+	ConversationID []byte
+	Level          int64
+	WorkspaceID    int64
+}
+
+func (q *Queries) GrantSessionPermission(ctx context.Context, arg GrantSessionPermissionParams) error {
+	_, err := q.db.ExecContext(ctx, grantSessionPermission,
+		arg.UserID,
+		arg.ConversationID,
+		arg.Level,
+		arg.WorkspaceID,
+	)
+	return err
+}
+
+const insertAgent = `-- name: InsertAgent :exec
+INSERT INTO agents (
+    workspace_id, id, created_at, name, bundle_location, version, description,
+    updated_at, kind, created_by
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`
+
+type InsertAgentParams struct {
+	WorkspaceID    int64
+	ID             db.Uuid16
+	CreatedAt      int64
+	Name           string
+	BundleLocation string
+	Version        int64
+	Description    []byte
+	UpdatedAt      *int64
+	Kind           int64
+	CreatedBy      *string
+}
+
+func (q *Queries) InsertAgent(ctx context.Context, arg InsertAgentParams) error {
+	_, err := q.db.ExecContext(ctx, insertAgent,
+		arg.WorkspaceID,
+		arg.ID,
+		arg.CreatedAt,
+		arg.Name,
+		arg.BundleLocation,
+		arg.Version,
+		arg.Description,
+		arg.UpdatedAt,
+		arg.Kind,
+		arg.CreatedBy,
+	)
+	return err
+}
+
 const listAgents = `-- name: ListAgents :many
 SELECT id, created_at, updated_at, name, bundle_location, version, kind,
        description, created_by
@@ -426,6 +500,76 @@ func (q *Queries) ListAgents(ctx context.Context, arg ListAgentsParams) ([]ListA
 	var items []ListAgentsRow
 	for rows.Next() {
 		var i ListAgentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Name,
+			&i.BundleLocation,
+			&i.Version,
+			&i.Kind,
+			&i.Description,
+			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAgentsOwnedBy = `-- name: ListAgentsOwnedBy :many
+SELECT id, created_at, updated_at, name, bundle_location, version, kind,
+       description, created_by
+FROM agents
+WHERE workspace_id = ?1
+  AND kind = ?2
+  AND created_by = ?3
+ORDER BY created_at DESC, id DESC
+LIMIT ?4
+`
+
+type ListAgentsOwnedByParams struct {
+	WorkspaceID int64
+	Kind        int64
+	CreatedBy   *string
+	PageLimit   int64
+}
+
+type ListAgentsOwnedByRow struct {
+	ID             db.Uuid16
+	CreatedAt      int64
+	UpdatedAt      *int64
+	Name           string
+	BundleLocation string
+	Version        int64
+	Kind           int64
+	Description    []byte
+	CreatedBy      *string
+}
+
+// scope=user lists only the agents this caller installed. Filtering on kind
+// alone would also return another user's agents in a shared workspace.
+func (q *Queries) ListAgentsOwnedBy(ctx context.Context, arg ListAgentsOwnedByParams) ([]ListAgentsOwnedByRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAgentsOwnedBy,
+		arg.WorkspaceID,
+		arg.Kind,
+		arg.CreatedBy,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAgentsOwnedByRow
+	for rows.Next() {
+		var i ListAgentsOwnedByRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.CreatedAt,

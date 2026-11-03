@@ -8,6 +8,7 @@ require (
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/klauspost/compress v1.20.3
 	github.com/oapi-codegen/runtime v1.8.0
+	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.61.1
 )
 

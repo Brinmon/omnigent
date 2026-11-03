@@ -80,7 +80,9 @@ func (s *Server) sessionDetail(r *http.Request, row store.Conversation) (api.Ses
 	archived := row.Archived
 	kind := "default"
 	permissionLevel := levelOwner
-	labels := map[string]string{}
+	// The create records the client surface it came from; a session read back
+	// must report it or the client loses the label it wrote itself.
+	labels := sessionLabels("")
 	status := api.SessionResponseStatusIdle
 	falseValue := false
 	emptyModels := []api.NativeModelOption{}
@@ -130,6 +132,20 @@ func (s *Server) sessionDetail(r *http.Request, row store.Conversation) (api.Ses
 		if err == nil {
 			name := agent.Name
 			detail.AgentName = &name
+
+			// harness, llm_model, and context_window are derived from the bundle
+			// rather than stored, so they are absent unless the blob is read.
+			if spec, ok := s.readAgentBundle(r.Context(), agent.BundleLocation); ok {
+				if spec.Harness != "" {
+					harness := spec.Harness
+					detail.Harness = &harness
+				}
+				if spec.Model != "" {
+					model := spec.Model
+					detail.LlmModel = &model
+					detail.ContextWindow = contextWindowFor(model)
+				}
+			}
 			// The description is a CompressedText column; decode it rather than
 			// passing the stored frame through.
 			if len(agent.Description) > 0 {

@@ -24,11 +24,6 @@ func (s *Server) VersionApiVersionGet(w http.ResponseWriter, r *http.Request) {
 	notImplemented(w, "VersionApiVersionGet")
 }
 
-// ListBuiltinAgentsV1AgentsGet is not implemented in P1.
-func (s *Server) ListBuiltinAgentsV1AgentsGet(w http.ResponseWriter, r *http.Request, params api.ListBuiltinAgentsV1AgentsGetParams) {
-	notImplemented(w, "ListBuiltinAgentsV1AgentsGet")
-}
-
 // InstallAgentV1AgentsPost is not implemented in P1.
 func (s *Server) InstallAgentV1AgentsPost(w http.ResponseWriter, r *http.Request) {
 	notImplemented(w, "InstallAgentV1AgentsPost")
@@ -302,11 +297,6 @@ func (s *Server) ListProfilesV1SandboxProfilesGet(w http.ResponseWriter, r *http
 // ModelOptionsV1SandboxProvidersProviderHarnessesHarnessModelOptionsGet is not implemented in P1.
 func (s *Server) ModelOptionsV1SandboxProvidersProviderHarnessesHarnessModelOptionsGet(w http.ResponseWriter, r *http.Request, provider string, harness string, params api.ModelOptionsV1SandboxProvidersProviderHarnessesHarnessModelOptionsGetParams) {
 	notImplemented(w, "ModelOptionsV1SandboxProvidersProviderHarnessesHarnessModelOptionsGet")
-}
-
-// CreateSessionV1SessionsPost is not implemented in P1.
-func (s *Server) CreateSessionV1SessionsPost(w http.ResponseWriter, r *http.Request) {
-	notImplemented(w, "CreateSessionV1SessionsPost")
 }
 
 // ListSessionProjectsV1SessionsProjectsGet is not implemented in P1.

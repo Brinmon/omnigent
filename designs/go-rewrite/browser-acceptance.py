@@ -18,6 +18,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import socket
@@ -26,6 +27,8 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+
+import httpx
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _GO_DIR = _REPO_ROOT / "go"
@@ -90,6 +93,10 @@ def start_server(db: Path, port: int, log: Path) -> subprocess.Popen[bytes]:
             str(port),
             "--database-uri",
             f"sqlite:///{db}",
+            # A bundled create stores its blob here; without it the create route
+            # answers that storage is not configured.
+            "--artifact-location",
+            str(db.parent / "artifacts"),
         ],
         env=clean_env(),
         cwd=str(_REPO_ROOT),
@@ -235,6 +242,84 @@ def main(argv: list[str] | None = None) -> int:
                     if step("open-session", open_session):
                         if step("send-message", send_message):
                             step("history-after-reload", history_after_reload)
+
+            # B6/B7/B8: the create path.
+            #
+            # These do NOT press "Start session". Both backends disable that
+            # button when the server reports no execution target
+            # (managed_sandboxes_enabled is false and /v1/hosts is empty), which is
+            # this fixture's state -- verified against the Python build too. Driving
+            # it would assert the baseline's configuration rather than this server.
+            #
+            # What the browser CAN prove is the part a user reaches: the created
+            # session appears in the sidebar and opens. The create itself goes
+            # through the same HTTP route the client uses.
+            created = {"id": ""}
+
+            def new_session() -> str:
+                import tarfile
+                import gzip
+                import io as _io
+
+                agent_yaml = """\
+name: browser_probe
+description: Created by the browser acceptance run.
+executor:
+  harness: pi
+  model: deepseek-v4.1-flash
+prompt: |
+  Answer briefly.
+"""
+                buffer = _io.BytesIO()
+                with gzip.GzipFile(fileobj=buffer, mode="wb", mtime=0) as gz:
+                    with tarfile.open(fileobj=gz, mode="w") as tar:
+                        payload = agent_yaml.encode()
+                        info = tarfile.TarInfo(name="browser_probe.yaml")
+                        info.size = len(payload)
+                        tar.addfile(info, _io.BytesIO(payload))
+
+                response = httpx.post(
+                    f"{base_url}/v1/sessions",
+                    files={"bundle": ("bundle.tar.gz", buffer.getvalue(),
+                                      "application/gzip")},
+                    data={"metadata": json.dumps({"title": "Browser probe"})},
+                    timeout=60.0,
+                )
+                if response.status_code != 201:
+                    raise AssertionError(
+                        f"create answered {response.status_code}: {response.text[:200]}"
+                    )
+                body = response.json()
+                created["id"] = body["session_id"]
+                return f"created {created['id'][:8]}"
+
+            def created_session_is_listed() -> str:
+                # This is the user-visible half: a reload must show the new session
+                # in the sidebar, which means the list query can find the row the
+                # create wrote.
+                page.goto(base_url, wait_until="domcontentloaded")
+                page.wait_for_selector("text=Browser probe", timeout=30_000)
+                return "created session is listed in the sidebar"
+
+            def created_session_opens() -> str:
+                page.get_by_text("Browser probe", exact=False).first.click()
+                page.wait_for_url("**/c/**", timeout=30_000)
+                opened_id = page.url.rsplit("/c/", 1)[-1].split("?")[0]
+                if opened_id != created["id"]:
+                    raise AssertionError(
+                        f"opened {opened_id[:8]}, expected {created['id'][:8]}"
+                    )
+                # The page must render the session rather than its error state.
+                page.wait_for_selector("[data-testid='composer-input'], textarea",
+                                       timeout=30_000)
+                body = page.inner_text("body")
+                if "Conversation not found" in body:
+                    raise AssertionError("the session page reports it is missing")
+                return f"opened {opened_id[:8]}"
+
+            if step("new-session", new_session):
+                if step("new-session-listed", created_session_is_listed):
+                    step("new-session-opens", created_session_opens)
 
             browser.close()
     finally:

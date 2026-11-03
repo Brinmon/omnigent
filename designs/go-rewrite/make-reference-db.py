@@ -115,6 +115,11 @@ def main(argv: list[str] | None = None) -> int:
 
     with Session(engine) as session:
         # ── agents: one per kind, one with a description (CompressedText) ──
+        #
+        # created_by is "local" for the user agent because that is the identity the
+        # single-user server serves. Without it GET /v1/agents?scope=user returns
+        # nothing, and the new-session picker has no agent to bind -- a fixture
+        # that cannot exercise the create path it is meant to test.
         for name, kind in (("agent/server", "server"), ("agent/user", "user")):
             session.add(
                 m.SqlAgent(
@@ -131,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
                         else "short"
                     ),
                     updated_at=now,
-                    created_by=None if kind == "server" else "fixture-user",
+                    created_by=None if kind == "server" else "local",
                 )
             )
 

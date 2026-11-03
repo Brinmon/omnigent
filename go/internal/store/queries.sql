@@ -183,3 +183,29 @@ INSERT INTO conversation_items (
 -- The fallback for a conversation whose counter is NULL.
 SELECT COALESCE(MAX(position), -1) FROM conversation_items
 WHERE workspace_id = ? AND conversation_id = ?;
+
+-- name: InsertAgent :exec
+INSERT INTO agents (
+    workspace_id, id, created_at, name, bundle_location, version, description,
+    updated_at, kind, created_by
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+-- name: GrantSessionPermission :exec
+INSERT INTO session_permissions (user_id, conversation_id, level, workspace_id)
+VALUES (?, ?, ?, ?);
+
+-- name: CreateSessionMetadata :exec
+INSERT INTO omnigent_conversation_metadata (workspace_id, id, kind)
+VALUES (?, ?, ?);
+
+-- name: ListAgentsOwnedBy :many
+-- scope=user lists only the agents this caller installed. Filtering on kind
+-- alone would also return another user's agents in a shared workspace.
+SELECT id, created_at, updated_at, name, bundle_location, version, kind,
+       description, created_by
+FROM agents
+WHERE workspace_id = sqlc.arg('workspace_id')
+  AND kind = sqlc.arg('kind')
+  AND created_by = sqlc.arg('created_by')
+ORDER BY created_at DESC, id DESC
+LIMIT sqlc.arg('page_limit');

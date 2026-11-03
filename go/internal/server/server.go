@@ -18,6 +18,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/Brinmon/omnigent/go/internal/artifact"
+
 	"github.com/Brinmon/omnigent/go/internal/api"
 	"github.com/Brinmon/omnigent/go/internal/db"
 	"github.com/Brinmon/omnigent/go/internal/pi"
@@ -53,6 +55,10 @@ type Server struct {
 	// policies gates tool calls and request phases. Nil means nothing is gated,
 	// which is the behaviour a build with no policies configured has.
 	policies *policy.Engine
+	// artifacts stores agent bundles. Nil means the server refuses a bundled
+	// create with an explicit error rather than writing the database row and
+	// leaving it pointing at a blob that does not exist.
+	artifacts *artifact.Store
 	// pi is how to launch the harness, or why it cannot be launched. Resolved
 	// once at startup so a turn does not pay for the lookup, and so a build with
 	// no Pi installed still serves the read API and can say why.
@@ -73,7 +79,7 @@ type Server struct {
 var _ api.ServerInterface = (*Server)(nil)
 
 // New builds a Server over the given database.
-func New(conn *sql.DB, version string) *Server {
+func New(conn *sql.DB, version string, options ...Option) *Server {
 	// A malformed policy configuration is fatal rather than a warning: silently
 	// running with no policies would remove a guardrail without saying so, and the
 	// operator who set OMNIGENT_POLICY_RULES would not learn it did not apply.
@@ -89,7 +95,7 @@ func New(conn *sql.DB, version string) *Server {
 		slog.Info("policy engine loaded", "rules", engine.Rules())
 	}
 
-	return &Server{
+	server := &Server{
 		db:          conn,
 		queries:     store.New(conn),
 		version:     version,
@@ -101,6 +107,18 @@ func New(conn *sql.DB, version string) *Server {
 		policies:    engine,
 		webRoot:     spaDirFromEnv(),
 	}
+	for _, option := range options {
+		option(server)
+	}
+	return server
+}
+
+// Option adjusts a Server during construction.
+type Option func(*Server)
+
+// WithArtifacts enables the bundled create path by giving it a blob store.
+func WithArtifacts(store *artifact.Store) Option {
+	return func(s *Server) { s.artifacts = store }
 }
 
 // Router returns the HTTP handler for the full API surface.

@@ -24,6 +24,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
+	"github.com/Brinmon/omnigent/go/internal/artifact"
 	"github.com/Brinmon/omnigent/go/internal/server"
 )
 
@@ -70,6 +71,8 @@ func runServe(args []string) error {
 	port := fs.Int("port", 8080, "port to bind")
 	dbURI := fs.String("database-uri", "", "database URI (default: $OMNIGENT_DATABASE_URI or the local chat.db)")
 	logLevel := fs.String("log-level", "info", "log level: debug, info, warn, error")
+	artifactLocation := fs.String("artifact-location", "",
+		"directory for agent bundles (default: $OMNIGENT_ARTIFACT_LOCATION or .omnigent/artifacts beside the database)")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -93,6 +96,22 @@ func runServe(args []string) error {
 	if err != nil {
 		return err
 	}
+
+	// Bundled creates need somewhere to put the blob, so the store is resolved
+	// before the server starts: a bad location must fail startup rather than
+	// every create request.
+	blobRoot := *artifactLocation
+	if blobRoot == "" {
+		blobRoot = os.Getenv("OMNIGENT_ARTIFACT_LOCATION")
+	}
+	if blobRoot == "" {
+		blobRoot = filepath.Join(filepath.Dir(dbPath), "artifacts")
+	}
+	blobs, err := artifact.NewStore(blobRoot)
+	if err != nil {
+		return err
+	}
+	options := []server.Option{server.WithArtifacts(blobs)}
 	// Create the parent directory so a first run against the default location
 	// succeeds rather than failing on a missing .omnigent/.
 	if dir := filepath.Dir(dbPath); dir != "" && dir != "." {
@@ -121,7 +140,7 @@ func runServe(args []string) error {
 	addr := net.JoinHostPort(*host, fmt.Sprint(*port))
 	httpServer := &http.Server{
 		Addr:              addr,
-		Handler:           server.New(conn, version).Router(),
+		Handler:           server.New(conn, version, options...).Router(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
