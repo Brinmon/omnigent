@@ -97,6 +97,20 @@ func (s *Server) createSessionFromBundle(
 	return createdSession{SessionID: sessionID, AgentID: agentID, AgentName: spec.Name}, nil
 }
 
+// setSessionWorkspace records the directory a session runs in.
+func (s *Server) setSessionWorkspace(ctx context.Context, q *store.Queries,
+	sessionID db.Uuid16, workspace string) error {
+	err := q.SetSessionWorkspace(ctx, store.SetSessionWorkspaceParams{
+		Workspace:   &workspace,
+		WorkspaceID: s.workspace,
+		ID:          sessionID,
+	})
+	if err != nil {
+		return fmt.Errorf("record session workspace: %w", err)
+	}
+	return nil
+}
+
 // insertLabels records the labels a create carried, plus the client surface.
 //
 // The client's create token lives here and is how it matches the session it just
@@ -164,6 +178,13 @@ func (s *Server) createSessionForAgent(
 	}
 	if err := s.insertLabels(ctx, queries, sessionUUID, labels, clientSurface); err != nil {
 		return db.Uuid16{}, err
+	}
+	// The workspace the user picked travels only in the composer-context label, so
+	// it is recovered here and stored on the metadata row the read path serves.
+	if workspace := workingDirectoryFromLabels(labels); workspace != "" {
+		if err := s.setSessionWorkspace(ctx, queries, sessionUUID, workspace); err != nil {
+			return db.Uuid16{}, err
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return db.Uuid16{}, fmt.Errorf("commit create transaction: %w", err)

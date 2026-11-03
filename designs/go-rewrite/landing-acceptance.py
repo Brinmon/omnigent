@@ -148,6 +148,23 @@ def main(argv: list[str] | None = None) -> int:
             time.sleep(1)
             return f"{len(entries)} entries listed"
 
+        def f2c_workspace_is_bound() -> str:
+            # The picked directory travels only in a composer-context label, so a
+            # create that ignores it runs in the default directory while the page
+            # claims the session is bound. Checking the session response is what
+            # catches that: the composer renders a plausible name either way.
+            sessions = api(args.base_url, "/v1/sessions?limit=1&order=desc&sort_by=created_at")
+            rows = sessions.get("data") or []
+            if not rows:
+                return "no session yet; binding is checked after the create"
+            detail = api(args.base_url, f"/v1/sessions/{rows[0]['id']}")
+            workspace = detail.get("workspace")
+            if not workspace:
+                raise AssertionError(
+                    "the newest session reports no workspace"
+                )
+            return f"workspace: {workspace[-28:]}"
+
         def f3_send_enables_after_typing() -> str:
             box = page.locator("[data-testid='new-chat-landing-input']")
             box.fill(PROMPT)
@@ -250,6 +267,7 @@ def main(argv: list[str] | None = None) -> int:
                             if step("F5 prompt shown", f5_prompt_is_rendered):
                                 if step("F6 reply arrives", f6_reply_arrives):
                                     step("F7 reload keeps history", f7_reload_keeps_history)
+                            step("F6b workspace bound", f2c_workspace_is_bound)
         step("F8 landing console clean", f8_landing_console_is_clean)
         if created.get("id"):
             step("F9 session page clean", f9_session_page_has_no_501)

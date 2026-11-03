@@ -241,3 +241,8 @@ ON CONFLICT (workspace_id, id) DO UPDATE SET
     name = excluded.name,
     bundle_location = excluded.bundle_location,
     version = excluded.version;
+
+-- name: SetSessionWorkspace :exec
+UPDATE omnigent_conversation_metadata
+SET workspace = ?
+WHERE workspace_id = ? AND id = ?;

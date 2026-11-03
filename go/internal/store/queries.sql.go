@@ -875,6 +875,23 @@ func (q *Queries) SetSessionArchived(ctx context.Context, arg SetSessionArchived
 	return err
 }
 
+const setSessionWorkspace = `-- name: SetSessionWorkspace :exec
+UPDATE omnigent_conversation_metadata
+SET workspace = ?
+WHERE workspace_id = ? AND id = ?
+`
+
+type SetSessionWorkspaceParams struct {
+	Workspace   *string
+	WorkspaceID int64
+	ID          db.Uuid16
+}
+
+func (q *Queries) SetSessionWorkspace(ctx context.Context, arg SetSessionWorkspaceParams) error {
+	_, err := q.db.ExecContext(ctx, setSessionWorkspace, arg.Workspace, arg.WorkspaceID, arg.ID)
+	return err
+}
+
 const updateSessionTitle = `-- name: UpdateSessionTitle :exec
 UPDATE conversations SET title = ?, updated_at = ? WHERE workspace_id = ? AND id = ?
 `

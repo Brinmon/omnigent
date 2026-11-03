@@ -123,6 +123,20 @@ func (s *Server) sessionDetail(r *http.Request, row store.Conversation) (api.Ses
 		detail.ParentSessionId = &parentID
 	}
 
+	// The workspace comes from the metadata row, not the conversation. The
+	// composer reads it to show where the session runs; leaving it unset shows
+	// "No workspace" for a session that was created with a directory.
+	if metadata, metaErr := s.queries.GetSessionMetadata(r.Context(),
+		store.GetSessionMetadataParams{
+			WorkspaceID: s.workspace,
+			ID:          row.ID,
+		}); metaErr == nil {
+		detail.Workspace = metadata.Workspace
+		detail.GitBranch = metadata.GitBranch
+		detail.HostId = uuidValue(metadata.HostID)
+		detail.ProjectId = uuidValue(metadata.ProjectID)
+	}
+
 	// The bound agent's name is what the session header shows.
 	if !row.AgentID.IsZero() {
 		agent, err := s.queries.GetAgent(r.Context(), store.GetAgentParams{
@@ -166,6 +180,16 @@ func (s *Server) sessionDetail(r *http.Request, row store.Conversation) (api.Ses
 		return detail, nil, err
 	}
 	return detail, items, nil
+}
+
+// uuidValue renders a uuid column as the bare hex string the client expects,
+// or nil when the column is the zero value (stored as NULL).
+func uuidValue(id db.Uuid16) *string {
+	if id.IsZero() {
+		return nil
+	}
+	text := id.String()
+	return &text
 }
 
 // loadItems reads the transcript with its payloads decoded.
